@@ -31,27 +31,9 @@ export class AuthService {
         console.log('Screen:', screenWidth, 'x', screenHeight);
         console.log('Pixel Ratio:', pixelRatio);
 
-        // Try to detect using multiple methods
-        const platform = navigator.platform || '';
-        const vendor = navigator.vendor || '';
-        
-        console.log('Platform:', platform);
-        console.log('Vendor:', vendor);
-
         // Check for Pro Max dimensions
         if (screenWidth === 430 && screenHeight === 932 && pixelRatio === 3) {
-            // Try to detect using model numbers first
-            if (userAgent.includes('MYW33') || userAgent.includes('iPhone16,2')) {
-                console.log('Detected iPhone 16 Pro Max');
-                return 'iPhone 16 Pro Max';
-            }
-            
-            if (userAgent.includes('MQ8T3') || userAgent.includes('iPhone15,3')) {
-                console.log('Detected iPhone 14 Pro Max');
-                return 'iPhone 14 Pro Max';
-            }
-
-            // If model numbers not found, try to detect using iOS version
+            // Both devices are running iOS 18
             const iOSMatch = userAgent.match(/iPhone OS (\d+)_(\d+)/);
             if (iOSMatch) {
                 const majorVersion = parseInt(iOSMatch[1]);
@@ -59,20 +41,19 @@ export class AuthService {
                 
                 console.log('iOS Version:', majorVersion, minorVersion);
                 
-                // iPhone 16 Pro Max runs iOS 18.2 or higher
-                if (majorVersion === 18 && minorVersion >= 2) {
-                    console.log('Detected iPhone 16 Pro Max via iOS version');
-                    return 'iPhone 16 Pro Max';
-                }
-                
-                // iPhone 14 Pro Max runs iOS 18.1
-                if (majorVersion === 18 && minorVersion === 1) {
-                    console.log('Detected iPhone 14 Pro Max via iOS version');
-                    return 'iPhone 14 Pro Max';
+                if (majorVersion === 18) {
+                    // iPhone 16 Pro Max is running 18.2.1
+                    if (minorVersion >= 2) {
+                        console.log('Detected iPhone 16 Pro Max (iOS 18.2.1)');
+                        return 'iPhone 16 Pro Max';
+                    }
+                    // iPhone 14 Pro Max is running 18.1.1
+                    if (minorVersion === 1) {
+                        console.log('Detected iPhone 14 Pro Max (iOS 18.1.1)');
+                        return 'iPhone 14 Pro Max';
+                    }
                 }
             }
-
-            console.log('Pro Max device detected but could not determine specific model');
         } else {
             console.log('Screen dimensions or pixel ratio not matching');
         }
