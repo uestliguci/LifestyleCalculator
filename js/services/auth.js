@@ -1,36 +1,42 @@
 export class AuthService {
     constructor() {
         this.currentUser = null;
-        this.allowedUsers = {
-            'jonka': {
-                password: 'bosi777'
-            },
-            'westli': {
-                password: 'admin'
-            }
-        };
+        this.baseUrl = 'http://localhost:3001';
     }
 
     async login(username, password) {
-        const user = this.allowedUsers[username];
-        if (!user || user.password !== password) {
+        try {
+            const response = await fetch(`${this.baseUrl}/auth/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            });
+
+            const result = await response.json();
+            
+            if (!result.success) {
+                return {
+                    success: false,
+                    message: result.message || 'Invalid username or password'
+                };
+            }
+
+            this.currentUser = result.user;
+            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+
+            return {
+                success: true,
+                user: this.currentUser
+            };
+        } catch (error) {
+            console.error('Login error:', error);
             return {
                 success: false,
-                message: 'Invalid username or password'
+                message: 'An error occurred during login'
             };
         }
-
-        this.currentUser = {
-            username
-        };
-
-        // Store in localStorage for persistence
-        localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-
-        return {
-            success: true,
-            user: this.currentUser
-        };
     }
 
     logout() {

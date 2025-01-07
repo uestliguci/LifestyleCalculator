@@ -1,14 +1,11 @@
-import { indexedDBStorage } from './indexed-db-storage.js';
-
 export class PDFExportService {
     constructor() {
         this.jsPDF = window.jspdf.jsPDF;
     }
 
-    async generateBankStatement() {
+    async generateBankStatement(transactions) {
         try {
             const doc = new this.jsPDF();
-            const transactions = await indexedDBStorage.getAllTransactions();
             
             // Add header
             this.addHeader(doc);

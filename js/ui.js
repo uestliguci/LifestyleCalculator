@@ -1,5 +1,5 @@
 import { ANIMATION_DURATION, BUDGET_ALERTS, CATEGORIES } from './config.js';
-import { indexedDBStorage } from './services/indexed-db-storage.js';
+import { postgresStorage } from './services/postgres-storage.js';
 import { formatCurrency, formatDate, debounce, detectAnomalies } from './utils.js';
 import { chartManager } from './charts.js';
 import { pdfExport } from './services/pdf-export.js';
@@ -18,10 +18,10 @@ class UIManager {
 
     async initializeDB() {
         try {
-            await indexedDBStorage.init();
-            console.log('IndexedDB initialized successfully');
+            await postgresStorage.init();
+            console.log('PostgreSQL initialized successfully');
         } catch (error) {
-            console.error('Failed to initialize IndexedDB:', error);
+            console.error('Failed to initialize PostgreSQL:', error);
             this.showAlert('Failed to initialize storage. Some features may not work.', 'error');
         }
     }
@@ -79,8 +79,43 @@ class UIManager {
     }
 
     /**
+     * Check budget alerts based on transaction
+     * @param {Object} transaction - The transaction to check
+     */
+    async checkBudgetAlerts(transaction) {
+        if (transaction.type !== 'expense') return;
+
+        const monthStart = new Date();
+        monthStart.setDate(1);
+        monthStart.setHours(0, 0, 0, 0);
+
+        const transactions = await postgresStorage.getTransactions();
+        const monthlyTransactions = transactions.filter(t => 
+            new Date(t.date) >= monthStart && t.type === 'expense'
+        );
+
+        // Calculate total monthly expenses
+        const totalExpenses = monthlyTransactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+        // Check category-specific budget alerts
+        const categoryExpenses = monthlyTransactions
+            .filter(t => t.category === transaction.category)
+            .reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+        // Check alerts
+        for (const alert of BUDGET_ALERTS) {
+            if (alert.type === 'total' && totalExpenses >= alert.threshold) {
+                this.showAlert(`Monthly expenses have exceeded ${formatCurrency(alert.threshold)}`, 'warning');
+            } else if (alert.type === 'category' && 
+                      alert.category === transaction.category && 
+                      categoryExpenses >= alert.threshold) {
+                this.showAlert(`${transaction.category} expenses have exceeded ${formatCurrency(alert.threshold)}`, 'warning');
+            }
+        }
+    }
+
+    /**
      * Update category options based on transaction type
-     * @param {string} type - Transaction type ('income' or 'expense')
      */
     updateCategoryOptions(type) {
         const categorySelect = document.getElementById('category');
@@ -94,7 +129,6 @@ class UIManager {
 
     /**
      * Switch between different sections
-     * @param {string} sectionId - ID of the section to switch to
      */
     switchSection(sectionId) {
         // Update tab bar buttons
@@ -114,7 +148,7 @@ class UIManager {
                     if (!section.classList.contains('active')) {
                         section.style.display = 'none';
                     }
-                }, 300); // Match animation duration
+                }, 300);
             }
         });
 
@@ -127,7 +161,6 @@ class UIManager {
      */
     async refreshCurrentSection() {
         try {
-            // Always update balance indicator
             await this.updateBalanceIndicator();
 
             switch (this.currentSection) {
@@ -138,7 +171,6 @@ class UIManager {
                     await this.updateAnalytics();
                     break;
                 case 'settings':
-                    // Nothing to refresh in settings
                     break;
             }
         } catch (error) {
@@ -149,7 +181,6 @@ class UIManager {
 
     /**
      * Handle transaction form submission
-     * @param {Event} e - Form submit event
      */
     async handleTransactionSubmit(e) {
         e.preventDefault();
@@ -161,7 +192,6 @@ class UIManager {
             const formattedDate = isoString.replace(/\.\d+/, '.000');
             const transactionId = now.getTime().toString(36);
             
-            // Create transaction with all required fields
             const transaction = {
                 type: form.querySelector('#transaction-type').value,
                 amount: parseFloat(form.querySelector('#amount').value),
@@ -170,17 +200,17 @@ class UIManager {
                 date: formattedDate,
                 timestamp: formattedDate,
                 id: transactionId,
-                userId: 'default' // Using default user ID for local storage
+                userId: 'default'
             };
 
             console.log('Submitting transaction:', transaction);
-            const result = await indexedDBStorage.addTransaction(transaction);
+            const result = await postgresStorage.addTransaction(transaction);
             
             if (result.success) {
                 this.showAlert('Transaction added successfully', 'success');
                 form.reset();
                 await this.updateBalanceIndicator();
-                await this.checkBudgetAlerts();
+                await this.checkBudgetAlerts(transaction);
             } else {
                 if (result.errors) {
                     console.error('Validation errors:', result.errors);
@@ -199,10 +229,9 @@ class UIManager {
 
     /**
      * Filter transactions based on search input
-     * @param {string} query - Search query
      */
     async filterTransactions(query) {
-        const transactions = await indexedDBStorage.getTransactions();
+        const transactions = await postgresStorage.getTransactions();
         const filtered = transactions.filter(t => 
             Object.values(t).some(value => 
                 String(value).toLowerCase().includes(query.toLowerCase())
@@ -213,14 +242,12 @@ class UIManager {
 
     /**
      * Update monthly analytics charts and summaries
-     * @param {string} month - Month to analyze (YYYY-MM format)
      */
     async updateAnalytics(month = new Date().toISOString().slice(0, 7)) {
-        const transactions = (await indexedDBStorage.getTransactions()).filter(t => 
+        const transactions = (await postgresStorage.getTransactions()).filter(t => 
             t.date.startsWith(month)
         );
 
-        // Update summary cards
         const summary = document.getElementById('monthly-summary');
         if (summary) {
             const stats = transactions.reduce((acc, t) => {
@@ -252,17 +279,15 @@ class UIManager {
             `;
         }
 
-        // Update charts
         chartManager.updateCategoryChart('category-chart', transactions);
         chartManager.updateTrendChart('trend-chart', transactions, 'daily');
     }
 
     /**
      * Update spending visualization charts
-     * @param {string} viewType - View type ('daily', 'weekly', 'monthly')
      */
     async updateVisualization(viewType = 'daily') {
-        const transactions = await indexedDBStorage.getTransactions();
+        const transactions = await postgresStorage.getTransactions();
         chartManager.updateTrendChart('spending-chart', transactions, viewType);
     }
 
@@ -270,7 +295,7 @@ class UIManager {
      * Update balance indicator with current total
      */
     async updateBalanceIndicator() {
-        const transactions = await indexedDBStorage.getTransactions();
+        const transactions = await postgresStorage.getTransactions();
         const balance = transactions.reduce((total, t) => 
             total + (t.type.toLowerCase() === 'income' ? 1 : -1) * parseFloat(t.amount)
         , 0);
@@ -284,10 +309,9 @@ class UIManager {
 
     /**
      * Update balance sheet charts
-     * @param {string} year - Year to analyze (YYYY format)
      */
     async updateBalanceSheet(year = new Date().getFullYear().toString()) {
-        const transactions = (await indexedDBStorage.getTransactions()).filter(t => 
+        const transactions = (await postgresStorage.getTransactions()).filter(t => 
             t.date.startsWith(year)
         );
 
@@ -297,8 +321,6 @@ class UIManager {
 
     /**
      * Show an alert message
-     * @param {string} message - Message to display
-     * @param {string} type - Alert type ('success', 'error', 'warning')
      */
     showAlert(message, type = 'info') {
         const alert = document.createElement('div');
@@ -336,7 +358,7 @@ class UIManager {
                 return;
             }
 
-            const transactions = await indexedDBStorage.getTransactions();
+            const transactions = await postgresStorage.getTransactions();
             const descriptions = [...new Set(transactions.map(t => t.description))].filter(Boolean);
             const matches = descriptions.filter(desc => 
                 desc.toLowerCase().includes(value)
@@ -359,7 +381,6 @@ class UIManager {
             }
         });
 
-        // Hide suggestions when clicking outside
         document.addEventListener('click', (e) => {
             if (!wrapper.contains(e.target)) {
                 suggestions.classList.remove('show');
@@ -394,17 +415,15 @@ class UIManager {
 
     /**
      * Render transaction list in iOS style
-     * @param {Array} transactions - Optional transactions array to render
      */
     async renderTransactionList(transactions = null) {
         const transactionsList = document.getElementById('transactions-list');
         if (!transactionsList) return;
 
         if (!transactions) {
-            transactions = await indexedDBStorage.getTransactions();
+            transactions = await postgresStorage.getTransactions();
         }
 
-        // Group transactions by date
         const groupedTransactions = transactions.reduce((groups, t) => {
             const date = new Date(t.date).toLocaleDateString();
             if (!groups[date]) groups[date] = [];
@@ -435,14 +454,14 @@ class UIManager {
      */
     async exportData() {
         try {
-            // Show export options dialog
             const format = await this.showExportDialog();
             
             if (format === 'pdf') {
-                await pdfExport.generateBankStatement();
+                const transactions = await postgresStorage.getAllTransactions();
+                await pdfExport.generateBankStatement(transactions);
                 this.showAlert('Bank statement exported as PDF', 'success');
             } else if (format === 'json') {
-                const data = await indexedDBStorage.exportData();
+                const data = await postgresStorage.exportData();
                 if (!data) {
                     this.showAlert('Failed to export data', 'error');
                     return;
@@ -466,7 +485,6 @@ class UIManager {
 
     /**
      * Show export format selection dialog
-     * @returns {Promise<string>} Selected format ('pdf' or 'json')
      */
     showExportDialog() {
         return new Promise((resolve) => {
@@ -490,7 +508,6 @@ class UIManager {
                 </div>
             `;
             
-            // Setup resolver
             window._resolveExportFormat = (format) => {
                 delete window._resolveExportFormat;
                 resolve(format === 'cancel' ? null : format);
@@ -501,5 +518,4 @@ class UIManager {
     }
 }
 
-// Initialize UI
 export const ui = new UIManager();

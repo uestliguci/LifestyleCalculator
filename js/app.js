@@ -1,4 +1,4 @@
-import { indexedDBStorage } from './services/indexed-db-storage.js';
+import { postgresStorage } from './services/postgres-storage.js';
 import { ui } from './ui.js';
 import { chartManager } from './charts.js';
 import { CATEGORIES, CURRENCIES } from './config.js';
@@ -22,9 +22,9 @@ class App {
      */
     async initialize() {
         try {
-            // Initialize IndexedDB
-            await indexedDBStorage.init();
-            console.log('IndexedDB initialized successfully');
+            // Initialize PostgreSQL
+            await postgresStorage.init();
+            console.log('PostgreSQL initialized successfully');
             
             // Setup authentication
             this.setupAuth();
@@ -85,11 +85,17 @@ class App {
      */
     onLoginSuccess(user) {
         // Hide login overlay
-        this.loginOverlay.style.display = 'none';
+        if (this.loginOverlay) {
+            this.loginOverlay.style.display = 'none';
+        }
         // Show app container
-        this.appContainer.style.display = 'block';
+        if (this.appContainer) {
+            this.appContainer.style.display = 'block';
+        }
         // Display username
-        this.usernameDisplay.textContent = user.username;
+        if (this.usernameDisplay) {
+            this.usernameDisplay.textContent = user.username;
+        }
         // Initialize UI components
         this.initializeUI();
     }
@@ -99,12 +105,20 @@ class App {
      */
     onLogout() {
         // Show login overlay
-        this.loginOverlay.style.display = 'flex';
+        if (this.loginOverlay) {
+            this.loginOverlay.style.display = 'flex';
+        }
         // Hide app container
-        this.appContainer.style.display = 'none';
+        if (this.appContainer) {
+            this.appContainer.style.display = 'none';
+        }
         // Clear login form
-        this.loginForm.reset();
-        this.loginError.textContent = '';
+        if (this.loginForm) {
+            this.loginForm.reset();
+        }
+        if (this.loginError) {
+            this.loginError.textContent = '';
+        }
     }
 
     /**
@@ -132,7 +146,9 @@ class App {
                     // Update amount label with selected currency
                     const amountLabel = document.querySelector('label[for="amount"]');
                     const currency = CURRENCIES[select.value];
-                    amountLabel.textContent = `Amount (${currency.symbol})`;
+                    if (amountLabel && currency) {
+                        amountLabel.textContent = `Amount (${currency.symbol})`;
+                    }
                 }
                 ui.refreshCurrentSection();
             });
@@ -163,9 +179,6 @@ class App {
 
     /**
      * Get HTML options for category select
-     * @param {string} type - Transaction type
-     * @param {string} selected - Selected category
-     * @returns {string} HTML options
      */
     getCategoryOptions(type, selected = '') {
         const categories = CATEGORIES[type] || [];
@@ -257,12 +270,11 @@ class App {
 
     /**
      * Read and import data from file
-     * @param {File} file - File to import
      */
     async readAndImportFile(file) {
         const reader = new FileReader();
         reader.onload = async (e) => {
-            const result = await indexedDBStorage.importData(e.target.result);
+            const result = await postgresStorage.importData(e.target.result);
             if (result.success) {
                 ui.showAlert('Data imported successfully', 'success');
                 ui.refreshCurrentSection();

@@ -1,15 +1,18 @@
 {
-  "name": "lifestylecalculator",
+  "name": "lifestyle-calculator",
   "version": "1.0.0",
-  "main": "index.js",
+  "description": "Financial management application",
+  "main": "index.html",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "concurrently \"cd server && npm start\" \"http-server -p 3000\"",
+    "dev": "concurrently \"cd server && npm run dev\" \"http-server -p 3000\"",
+    "install-all": "npm install && cd server && npm install"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
   "dependencies": {
-    "sharp": "^0.33.5"
+    "chart.js": "^4.4.0",
+    "http-server": "^14.1.1"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.1"
   }
 }
