@@ -17,6 +17,7 @@ export class AuthService {
         const userAgent = navigator.userAgent;
         const screenWidth = window.screen.width;
         const screenHeight = window.screen.height;
+        const pixelRatio = window.devicePixelRatio;
 
         // Check if it's an iPhone
         const isiPhone = /iPhone/.test(userAgent);
@@ -25,14 +26,17 @@ export class AuthService {
             return 'unsupported';
         }
 
-        // iPhone 14 Pro Max & iPhone 16 Pro Max: 430x932
-        if (screenWidth === 430 && screenHeight === 932) {
-            // Check for iPhone 16 Pro Max specifically in user agent
-            if (userAgent.includes('iPhone16,2')) {
+        // iPhone 14/16 Pro Max detection
+        // Both have 430x932 screen and 3x pixel ratio
+        if (screenWidth === 430 && screenHeight === 932 && pixelRatio === 3) {
+            // Since Safari on iOS 17 (iPhone 16) doesn't expose detailed model info,
+            // we'll use iOS version to differentiate
+            const iOSMatch = userAgent.match(/OS (\d+)_/);
+            const iOSVersion = iOSMatch ? parseInt(iOSMatch[1]) : 0;
+            
+            if (iOSVersion >= 17) {
                 return 'iPhone 16 Pro Max';
-            }
-            // iPhone 14 Pro Max
-            if (userAgent.includes('iPhone15,3')) {
+            } else {
                 return 'iPhone 14 Pro Max';
             }
         }
