@@ -22,26 +22,8 @@ const CURRENCIES = {
     ALL: {
         code: 'ALL',
         name: 'Albanian Lek',
-        symbol: 'L',
+        symbol: 'Lek',
         position: 'after' // currency symbol position
-    },
-    USD: {
-        code: 'USD',
-        name: 'United States Dollar',
-        symbol: '$',
-        position: 'before'
-    },
-    EUR: {
-        code: 'EUR',
-        name: 'Euro',
-        symbol: '€',
-        position: 'before'
-    },
-    GBP: {
-        code: 'GBP',
-        name: 'UK Pound Sterling',
-        symbol: '£',
-        position: 'before'
     }
 };
 
