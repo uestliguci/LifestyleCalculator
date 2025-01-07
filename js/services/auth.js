@@ -8,7 +8,7 @@ export class AuthService {
             },
             'westli': {
                 password: 'admin',
-                deviceType: 'iPhone 15 Pro Max'
+                deviceType: 'iPhone 16 Pro Max'
             }
         };
     }
@@ -18,10 +18,11 @@ export class AuthService {
         const screenWidth = window.screen.width;
         const screenHeight = window.screen.height;
 
-        // iPhone 14 Pro Max: 430x932
-        // iPhone 15 Pro Max: 430x932 (same dimensions)
+        // iPhone 14 Pro Max & iPhone 16 Pro Max: 430x932
         if (screenWidth === 430 && screenHeight === 932) {
-            return 'iPhone 15 Pro Max'; // or iPhone 14 Pro Max
+            // Since both devices have same dimensions, we'll return iPhone 16 Pro Max
+            // The user will be restricted by username/password combination
+            return 'iPhone 16 Pro Max';
         }
         return 'unsupported';
     }
@@ -32,7 +33,7 @@ export class AuthService {
         if (device === 'unsupported') {
             return {
                 success: false,
-                message: 'This application is only available on iPhone 14 Pro Max and iPhone 15 Pro Max'
+                message: 'This application is only available on iPhone 14 Pro Max and iPhone 16 Pro Max'
             };
         }
 
@@ -59,10 +60,10 @@ export class AuthService {
             };
         }
 
-        if (username === 'westli' && device !== 'iPhone 15 Pro Max') {
+        if (username === 'westli' && device !== 'iPhone 16 Pro Max') {
             return {
                 success: false,
-                message: 'This account can only be used on iPhone 15 Pro Max'
+                message: 'This account can only be used on iPhone 16 Pro Max'
             };
         }
 
