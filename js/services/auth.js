@@ -18,11 +18,23 @@ export class AuthService {
         const screenWidth = window.screen.width;
         const screenHeight = window.screen.height;
 
+        // Check if it's an iPhone
+        const isiPhone = /iPhone/.test(userAgent);
+        
+        if (!isiPhone) {
+            return 'unsupported';
+        }
+
         // iPhone 14 Pro Max & iPhone 16 Pro Max: 430x932
         if (screenWidth === 430 && screenHeight === 932) {
-            // Since both devices have same dimensions, we'll return iPhone 16 Pro Max
-            // The user will be restricted by username/password combination
-            return 'iPhone 16 Pro Max';
+            // Check for iPhone 16 Pro Max specifically in user agent
+            if (userAgent.includes('iPhone16,2')) {
+                return 'iPhone 16 Pro Max';
+            }
+            // iPhone 14 Pro Max
+            if (userAgent.includes('iPhone15,3')) {
+                return 'iPhone 14 Pro Max';
+            }
         }
         return 'unsupported';
     }
@@ -31,9 +43,14 @@ export class AuthService {
         const device = this.detectDevice();
         
         if (device === 'unsupported') {
+            // Check if it's an iPhone at all
+            const isiPhone = /iPhone/.test(navigator.userAgent);
+            const message = isiPhone 
+                ? 'This application is only available on iPhone 14 Pro Max and iPhone 16 Pro Max'
+                : 'This application is only available on mobile devices (iPhone 14 Pro Max and iPhone 16 Pro Max)';
             return {
                 success: false,
-                message: 'This application is only available on iPhone 14 Pro Max and iPhone 16 Pro Max'
+                message: message
             };
         }
 
