@@ -1,0 +1,115 @@
+/* Transaction Details */
+.transaction-details {
+    padding: 1.5rem;
+    background: var(--background-color);
+    border-radius: 8px;
+    margin: 0.5rem 0;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.detail-value {
+    font-weight: 500;
+}
+
+.detail-value.transaction-type-income {
+    color: var(--success-color);
+}
+
+.detail-value.transaction-type-expense {
+    color: var(--danger-color);
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+.btn-view {
+    background: var(--info-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.btn-view:hover {
+    background: var(--info-color-dark);
+}
+
+/* Mobile Optimization */
+@media (max-width: 768px) {
+    .transaction-details {
+        padding: 1rem;
+        margin: 0.25rem 0;
+    }
+
+    .detail-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.25rem;
+    }
+
+    .detail-value {
+        width: 100%;
+        text-align: right;
+    }
+
+    .action-buttons {
+        justify-content: center;
+    }
+
+    .btn-view {
+        padding: 0.75rem 1.25rem;
+        font-size: 1rem;
+        width: 100%;
+    }
+}
+
+/* iPhone 14/16 Pro Max Optimization */
+@media only screen 
+    and (device-width: 430px) 
+    and (device-height: 932px),
+    only screen 
+    and (device-width: 428px) 
+    and (device-height: 926px) {
+    
+    .transaction-details {
+        padding: 1.25rem;
+    }
+
+    .detail-row {
+        padding: 1rem 0;
+    }
+
+    .detail-label,
+    .detail-value {
+        font-size: 1.1rem;
+    }
+
+    .btn-view {
+        padding: 1rem 1.5rem;
+        font-size: 1.1rem;
+    }
+}

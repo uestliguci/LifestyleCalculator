@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Financial Management System</title>
+    <meta name="description" content="Track your income and expenses with detailed analytics">
+    <meta name="theme-color" content="#3498db">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Main App -->
+    <div class="app-container" id="app-container">
+        <header class="app-header">
+            <div class="header-content">
+                <h1>Financial Management System</h1>
+            </div>
+            <nav class="main-nav">
+                <button class="nav-btn active" data-menu="daily-transaction">Daily Transaction</button>
+                <button class="nav-btn" data-menu="transaction-database">Database</button>
+                <button class="nav-btn" data-menu="monthly-analytics">Analytics</button>
+                <button class="nav-btn" data-menu="spending-visualization">Visualization</button>
+                <button class="nav-btn" data-menu="balance-sheet">Balance Sheet</button>
+            </nav>
+        </header>
+
+        <main class="app-content">
+            <!-- Daily Transaction Entry -->
+            <section id="daily-transaction" class="menu-section active">
+                <div class="card">
+                    <h2>Daily Transaction Entry</h2>
+                    <div class="balance-indicator">
+                        <span>Monthly Balance:</span>
+                        <span class="balance-amount">$0.00</span>
+                    </div>
+                    <form id="transaction-form" class="transaction-form">
+                        <div class="form-group">
+                            <label for="transaction-type">Type</label>
+                            <select id="transaction-type" required>
+                                <option value="expense">Expense</option>
+                                <option value="income">Income</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="amount">Amount ($)</label>
+                            <input type="number" id="amount" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="category">Category</label>
+                            <select id="category" required>
+                                <option value="">Select Category</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <input type="text" id="description" placeholder="Optional">
+                        </div>
+                        <button type="submit" class="btn-primary">Save Transaction</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Transaction Database -->
+            <section id="transaction-database" class="menu-section">
+                <div class="card">
+                    <h2>Transaction Database</h2>
+                    <div class="database-controls">
+                        <input type="text" id="search-transactions" placeholder="Search transactions...">
+                        <button id="export-data" class="btn-secondary">Export Data</button>
+                    </div>
+                    <div class="table-container">
+                        <table id="transactions-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>Type</th>
+                                    <th>Category</th>
+                                    <th>Amount</th>
+                                    <th>Description</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Monthly Analytics -->
+            <section id="monthly-analytics" class="menu-section">
+                <div class="card">
+                    <h2>Monthly Analytics</h2>
+                    <div class="date-selector">
+                        <input type="month" id="analytics-month">
+                    </div>
+                    <div class="analytics-grid">
+                        <div class="analytics-card">
+                            <h3>Summary</h3>
+                            <div id="monthly-summary"></div>
+                        </div>
+                        <div class="analytics-card">
+                            <h3>Category Breakdown</h3>
+                            <canvas id="category-chart"></canvas>
+                        </div>
+                        <div class="analytics-card">
+                            <h3>Trend Analysis</h3>
+                            <canvas id="trend-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Spending Visualization -->
+            <section id="spending-visualization" class="menu-section">
+                <div class="card">
+                    <h2>Spending Visualization</h2>
+                    <div class="visualization-controls">
+                        <select id="view-type">
+                            <option value="daily">Daily</option>
+                            <option value="weekly">Weekly</option>
+                            <option value="monthly">Monthly</option>
+                        </select>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="spending-chart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Balance Sheet -->
+            <section id="balance-sheet" class="menu-section">
+                <div class="card">
+                    <h2>Balance Sheet Analytics</h2>
+                    <div class="year-selector">
+                        <select id="balance-sheet-year"></select>
+                    </div>
+                    <div class="balance-grid">
+                        <div class="balance-card">
+                            <h3>Monthly Overview</h3>
+                            <canvas id="balance-overview-chart"></canvas>
+                        </div>
+                        <div class="balance-card">
+                            <h3>Savings Analysis</h3>
+                            <canvas id="savings-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="js/config.js" type="module"></script>
+    <script src="js/utils.js" type="module"></script>
+    <script src="js/services/indexed-db-storage.js" type="module"></script>
+    <script src="js/ui.js" type="module"></script>
+    <script src="js/charts.js" type="module"></script>
+    <script src="js/app.js" type="module"></script>
+    <script>
+        // Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./js/service-worker.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
