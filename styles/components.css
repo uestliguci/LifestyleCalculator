@@ -58,6 +58,36 @@
     background: var(--info-color-dark);
 }
 
+.btn-edit {
+    background: var(--warning-color);
+    color: var(--text-color);
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.btn-edit:hover {
+    background: #e0a800;
+}
+
+.btn-delete {
+    background: var(--danger-color);
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s;
+}
+
+.btn-delete:hover {
+    background: #c82333;
+}
+
 /* Mobile Optimization */
 @media (max-width: 768px) {
     .transaction-details {
@@ -108,8 +138,11 @@
         font-size: 1.1rem;
     }
 
-    .btn-view {
+    .btn-view,
+    .btn-edit,
+    .btn-delete {
         padding: 1rem 1.5rem;
         font-size: 1.1rem;
+        border-radius: 8px;
     }
 }

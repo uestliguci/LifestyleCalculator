@@ -2,25 +2,47 @@
 const CATEGORIES = {
     income: [
         'Salary',
-        'Freelance',
-        'Investments',
-        'Rental Income',
-        'Other Income'
+        'Bonus',
+        'OTC',
+        'Others'
     ],
     expense: [
-        'Housing',
-        'Transportation',
+        'Ciggies',
         'Food',
-        'Utilities',
-        'Healthcare',
-        'Insurance',
-        'Entertainment',
-        'Shopping',
-        'Education',
+        'Clothes',
+        'Gifts',
         'Savings',
-        'Debt Payment',
-        'Other Expenses'
+        'Activities',
+        'Online'
     ]
+};
+
+// Currency Configuration
+const CURRENCIES = {
+    ALL: {
+        code: 'ALL',
+        name: 'Albanian Lek',
+        symbol: 'L',
+        position: 'after' // currency symbol position
+    },
+    USD: {
+        code: 'USD',
+        name: 'United States Dollar',
+        symbol: '$',
+        position: 'before'
+    },
+    EUR: {
+        code: 'EUR',
+        name: 'Euro',
+        symbol: '€',
+        position: 'before'
+    },
+    GBP: {
+        code: 'GBP',
+        name: 'UK Pound Sterling',
+        symbol: '£',
+        position: 'before'
+    }
 };
 
 // Chart Colors
@@ -90,6 +112,7 @@ const ANIMATION_DURATION = {
 // Export configurations
 export {
     CATEGORIES,
+    CURRENCIES,
     CHART_COLORS,
     DATE_FORMATS,
     STORAGE_KEYS,

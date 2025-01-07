@@ -1,7 +1,8 @@
 import { indexedDBStorage } from './services/indexed-db-storage.js';
 import { ui } from './ui.js';
 import { chartManager } from './charts.js';
-import { CATEGORIES } from './config.js';
+import { CATEGORIES, CURRENCIES } from './config.js';
+import { authService } from './services/auth.js';
 
 /**
  * Main application class
@@ -9,6 +10,10 @@ import { CATEGORIES } from './config.js';
 class App {
     constructor() {
         this.appContainer = document.getElementById('app-container');
+        this.loginOverlay = document.getElementById('login-overlay');
+        this.loginForm = document.getElementById('login-form');
+        this.loginError = document.getElementById('login-error');
+        this.usernameDisplay = document.getElementById('username-display');
         this.initialize();
     }
 
@@ -21,8 +26,14 @@ class App {
             await indexedDBStorage.init();
             console.log('IndexedDB initialized successfully');
             
-            // Initialize UI components
-            this.initializeUI();
+            // Setup authentication
+            this.setupAuth();
+
+            // Check if user is already logged in
+            const user = authService.getCurrentUser();
+            if (user) {
+                this.onLoginSuccess(user);
+            }
 
             // Setup event handlers for global functions
             const { viewTransaction } = await import('./services/transaction-viewer.js');
@@ -40,9 +51,93 @@ class App {
     }
 
     /**
+     * Setup authentication handlers
+     */
+    setupAuth() {
+        // Handle login form submission
+        this.loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const result = await authService.login(username, password);
+                if (result.success) {
+                    this.onLoginSuccess(result.user);
+                } else {
+                    this.loginError.textContent = result.message;
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                this.loginError.textContent = 'An error occurred during login';
+            }
+        });
+
+        // Handle logout
+        window.logout = () => {
+            authService.logout();
+            this.onLogout();
+        };
+    }
+
+    /**
+     * Handle successful login
+     */
+    onLoginSuccess(user) {
+        // Hide login overlay
+        this.loginOverlay.style.display = 'none';
+        // Show app container
+        this.appContainer.style.display = 'block';
+        // Display username
+        this.usernameDisplay.textContent = user.username;
+        // Initialize UI components
+        this.initializeUI();
+    }
+
+    /**
+     * Handle logout
+     */
+    onLogout() {
+        // Show login overlay
+        this.loginOverlay.style.display = 'flex';
+        // Hide app container
+        this.appContainer.style.display = 'none';
+        // Clear login form
+        this.loginForm.reset();
+        this.loginError.textContent = '';
+    }
+
+    /**
+     * Format amount with currency symbol
+     */
+    formatAmount(amount, currencyCode) {
+        const currency = CURRENCIES[currencyCode];
+        if (!currency) return `${amount}`;
+        
+        const formattedAmount = parseFloat(amount).toFixed(2);
+        return currency.position === 'before' 
+            ? `${currency.symbol}${formattedAmount}`
+            : `${formattedAmount}${currency.symbol}`;
+    }
+
+    /**
      * Initialize UI components
      */
     initializeUI() {
+        // Setup currency change handlers
+        const currencySelects = document.querySelectorAll('select[id$="-currency"]');
+        currencySelects.forEach(select => {
+            select.addEventListener('change', () => {
+                if (select.id === 'currency') {
+                    // Update amount label with selected currency
+                    const amountLabel = document.querySelector('label[for="amount"]');
+                    const currency = CURRENCIES[select.value];
+                    amountLabel.textContent = `Amount (${currency.symbol})`;
+                }
+                ui.refreshCurrentSection();
+            });
+        });
+
         // Set current month in analytics
         const analyticsMonth = document.getElementById('analytics-month');
         if (analyticsMonth) {
@@ -80,9 +175,28 @@ class App {
     }
 
     /**
+     * Update transaction form based on type
+     */
+    updateTransactionForm() {
+        const typeSelect = document.getElementById('transaction-type');
+        const categorySelect = document.getElementById('category');
+        
+        if (typeSelect && categorySelect) {
+            const type = typeSelect.value.toLowerCase();
+            categorySelect.innerHTML = this.getCategoryOptions(type);
+        }
+    }
+
+    /**
      * Setup keyboard shortcuts
      */
     setupKeyboardShortcuts() {
+        // Add transaction type change handler
+        const typeSelect = document.getElementById('transaction-type');
+        if (typeSelect) {
+            typeSelect.addEventListener('change', () => this.updateTransactionForm());
+        }
+
         document.addEventListener('keydown', (e) => {
             // Ctrl/Cmd + S to save current transaction
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {

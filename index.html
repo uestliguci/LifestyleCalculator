@@ -13,14 +13,38 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/auth.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
+    <!-- Login Overlay -->
+    <div class="login-overlay" id="login-overlay">
+        <div class="login-card">
+            <h2>Login</h2>
+            <form id="login-form" class="login-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" required>
+                </div>
+                <div class="error-message" id="login-error"></div>
+                <button type="submit" class="btn-primary">Login</button>
+            </form>
+        </div>
+    </div>
+
     <!-- Main App -->
-    <div class="app-container" id="app-container">
+    <div class="app-container" id="app-container" style="display: none;">
         <header class="app-header">
             <div class="header-content">
                 <h1>Financial Management System</h1>
+                <div class="user-info">
+                    <span id="username-display"></span>
+                    <button class="btn-secondary" onclick="window.logout()">Logout</button>
+                </div>
             </div>
             <nav class="main-nav">
                 <button class="nav-btn active" data-menu="daily-transaction">Daily Transaction</button>
@@ -38,7 +62,7 @@
                     <h2>Daily Transaction Entry</h2>
                     <div class="balance-indicator">
                         <span>Monthly Balance:</span>
-                        <span class="balance-amount">$0.00</span>
+                        <span class="balance-amount" data-currency="ALL">L 0.00</span>
                     </div>
                     <form id="transaction-form" class="transaction-form">
                         <div class="form-group">
@@ -49,7 +73,16 @@
                             </select>
                         </div>
                         <div class="form-group">
-                            <label for="amount">Amount ($)</label>
+                            <label for="currency">Currency</label>
+                            <select id="currency" required>
+                                <option value="ALL">Albanian Lek (L)</option>
+                                <option value="USD">US Dollar ($)</option>
+                                <option value="EUR">Euro (€)</option>
+                                <option value="GBP">Pound Sterling (£)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="amount">Amount</label>
                             <input type="number" id="amount" step="0.01" min="0" required>
                         </div>
                         <div class="form-group">
@@ -84,6 +117,7 @@
                                     <th>Type</th>
                                     <th>Category</th>
                                     <th>Amount</th>
+                                    <th>Currency</th>
                                     <th>Description</th>
                                     <th>Actions</th>
                                 </tr>
@@ -98,8 +132,19 @@
             <section id="monthly-analytics" class="menu-section">
                 <div class="card">
                     <h2>Monthly Analytics</h2>
-                    <div class="date-selector">
-                        <input type="month" id="analytics-month">
+                    <div class="analytics-controls">
+                        <div class="date-selector">
+                            <input type="month" id="analytics-month">
+                        </div>
+                        <div class="currency-selector">
+                            <label for="analytics-currency">Display Currency:</label>
+                            <select id="analytics-currency">
+                                <option value="ALL">Albanian Lek (L)</option>
+                                <option value="USD">US Dollar ($)</option>
+                                <option value="EUR">Euro (€)</option>
+                                <option value="GBP">Pound Sterling (£)</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="analytics-grid">
                         <div class="analytics-card">
@@ -128,6 +173,12 @@
                             <option value="weekly">Weekly</option>
                             <option value="monthly">Monthly</option>
                         </select>
+                        <select id="visualization-currency">
+                            <option value="ALL">Albanian Lek (L)</option>
+                            <option value="USD">US Dollar ($)</option>
+                            <option value="EUR">Euro (€)</option>
+                            <option value="GBP">Pound Sterling (£)</option>
+                        </select>
                     </div>
                     <div class="chart-container">
                         <canvas id="spending-chart"></canvas>
@@ -139,8 +190,18 @@
             <section id="balance-sheet" class="menu-section">
                 <div class="card">
                     <h2>Balance Sheet Analytics</h2>
-                    <div class="year-selector">
-                        <select id="balance-sheet-year"></select>
+                    <div class="balance-controls">
+                        <div class="year-selector">
+                            <select id="balance-sheet-year"></select>
+                        </div>
+                        <div class="currency-selector">
+                            <select id="balance-sheet-currency">
+                                <option value="ALL">Albanian Lek (L)</option>
+                                <option value="USD">US Dollar ($)</option>
+                                <option value="EUR">Euro (€)</option>
+                                <option value="GBP">Pound Sterling (£)</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="balance-grid">
                         <div class="balance-card">

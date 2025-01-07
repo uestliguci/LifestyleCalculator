@@ -1,4 +1,5 @@
 import { validateTransaction } from '../utils.js';
+import { authService } from './auth.js';
 
 class IndexedDBStorage {
     constructor() {
@@ -49,6 +50,17 @@ class IndexedDBStorage {
 
     async addTransaction(transaction) {
         try {
+            const user = authService.getCurrentUser();
+            if (!user) {
+                return {
+                    success: false,
+                    message: 'User not authenticated'
+                };
+            }
+
+            // Add user ID to transaction
+            transaction.userId = user.username;
+
             // Validate transaction data
             const validation = validateTransaction(transaction);
             if (!validation.isValid) {
@@ -92,9 +104,16 @@ class IndexedDBStorage {
 
     async getTransactions() {
         return new Promise((resolve, reject) => {
+            const user = authService.getCurrentUser();
+            if (!user) {
+                reject(new Error('User not authenticated'));
+                return;
+            }
+
             const transaction = this.db.transaction(['transactions'], 'readonly');
             const store = transaction.objectStore('transactions');
-            const request = store.getAll();
+            const index = store.index('userId');
+            const request = index.getAll(user.username);
 
             request.onsuccess = () => {
                 resolve(request.result);
@@ -109,6 +128,14 @@ class IndexedDBStorage {
 
     async updateTransaction(id, updatedTransaction) {
         try {
+            const user = authService.getCurrentUser();
+            if (!user) {
+                return {
+                    success: false,
+                    message: 'User not authenticated'
+                };
+            }
+
             const validation = validateTransaction(updatedTransaction);
             if (!validation.isValid) {
                 return {
@@ -134,9 +161,19 @@ class IndexedDBStorage {
                         return;
                     }
 
+                    // Verify ownership
+                    if (existingTransaction.userId !== user.username) {
+                        resolve({
+                            success: false,
+                            message: 'Unauthorized to modify this transaction'
+                        });
+                        return;
+                    }
+
                     const updated = {
                         ...existingTransaction,
                         ...updatedTransaction,
+                        userId: user.username,
                         lastModified: new Date().toISOString()
                     };
 
@@ -168,37 +205,76 @@ class IndexedDBStorage {
     }
 
     async deleteTransaction(id) {
+        const user = authService.getCurrentUser();
+        if (!user) {
+            return {
+                success: false,
+                message: 'User not authenticated'
+            };
+        }
+
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction(['transactions'], 'readwrite');
             const store = transaction.objectStore('transactions');
 
-            const request = store.delete(id);
+            const getRequest = store.get(id);
 
-            request.onsuccess = () => {
-                resolve({
-                    success: true,
-                    message: 'Transaction deleted successfully'
-                });
-            };
+            getRequest.onsuccess = () => {
+                const existingTransaction = getRequest.result;
+                if (!existingTransaction) {
+                    resolve({
+                        success: false,
+                        message: 'Transaction not found'
+                    });
+                    return;
+                }
 
-            request.onerror = () => {
-                console.error('Error deleting transaction:', request.error);
-                reject({
-                    success: false,
-                    message: 'Failed to delete transaction'
-                });
+                // Verify ownership
+                if (existingTransaction.userId !== user.username) {
+                    resolve({
+                        success: false,
+                        message: 'Unauthorized to delete this transaction'
+                    });
+                    return;
+                }
+
+                const deleteRequest = store.delete(id);
+
+                deleteRequest.onsuccess = () => {
+                    resolve({
+                        success: true,
+                        message: 'Transaction deleted successfully'
+                    });
+                };
+
+                deleteRequest.onerror = () => {
+                    console.error('Error deleting transaction:', deleteRequest.error);
+                    reject({
+                        success: false,
+                        message: 'Failed to delete transaction'
+                    });
+                };
             };
         });
     }
 
     async getSettings() {
         return new Promise((resolve, reject) => {
+            const user = authService.getCurrentUser();
+            if (!user) {
+                reject(new Error('User not authenticated'));
+                return;
+            }
+
             const transaction = this.db.transaction(['settings'], 'readonly');
             const store = transaction.objectStore('settings');
-            const request = store.get('default');
+            const request = store.get(user.username);
 
             request.onsuccess = () => {
-                resolve(request.result || this.defaultSettings);
+                resolve(request.result || {
+                    ...this.defaultSettings,
+                    userId: user.username
+                });
             };
 
             request.onerror = () => {
@@ -209,18 +285,26 @@ class IndexedDBStorage {
     }
 
     async updateSettings(settings) {
+        const user = authService.getCurrentUser();
+        if (!user) {
+            return {
+                success: false,
+                message: 'User not authenticated'
+            };
+        }
+
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction(['settings'], 'readwrite');
             const store = transaction.objectStore('settings');
 
-            const getRequest = store.get('default');
+            const getRequest = store.get(user.username);
 
             getRequest.onsuccess = () => {
                 const currentSettings = getRequest.result || this.defaultSettings;
                 const updatedSettings = {
                     ...currentSettings,
                     ...settings,
-                    userId: 'default'
+                    userId: user.username
                 };
 
                 const updateRequest = store.put(updatedSettings);
@@ -245,6 +329,11 @@ class IndexedDBStorage {
 
     async exportData() {
         try {
+            const user = authService.getCurrentUser();
+            if (!user) {
+                return null;
+            }
+
             const [transactions, settings] = await Promise.all([
                 this.getTransactions(),
                 this.getSettings()
@@ -265,6 +354,14 @@ class IndexedDBStorage {
 
     async importData(jsonData) {
         try {
+            const user = authService.getCurrentUser();
+            if (!user) {
+                return {
+                    success: false,
+                    message: 'User not authenticated'
+                };
+            }
+
             const data = JSON.parse(jsonData);
             
             if (!data.transactions || !Array.isArray(data.transactions)) {
@@ -275,19 +372,22 @@ class IndexedDBStorage {
             const transactionsStore = transaction.objectStore('transactions');
             const settingsStore = transaction.objectStore('settings');
 
-            // Clear existing data
-            await this.clearData();
+            // Clear existing user data
+            await this.clearUserData(user.username);
 
-            // Import transactions
+            // Import transactions with user ID
             for (const t of data.transactions) {
-                await transactionsStore.add(t);
+                await transactionsStore.add({
+                    ...t,
+                    userId: user.username
+                });
             }
 
-            // Import settings
+            // Import settings with user ID
             if (data.settings) {
                 await settingsStore.put({
                     ...data.settings,
-                    userId: 'default'
+                    userId: user.username
                 });
             }
 
@@ -304,27 +404,39 @@ class IndexedDBStorage {
         }
     }
 
-    async clearData() {
+    async clearUserData(userId) {
         return new Promise((resolve, reject) => {
             const transaction = this.db.transaction(['transactions', 'settings'], 'readwrite');
             const transactionsStore = transaction.objectStore('transactions');
             const settingsStore = transaction.objectStore('settings');
 
-            transactionsStore.clear();
-            settingsStore.clear();
+            // Delete user's transactions
+            const index = transactionsStore.index('userId');
+            const request = index.openKeyCursor(IDBKeyRange.only(userId));
+
+            request.onsuccess = (event) => {
+                const cursor = event.target.result;
+                if (cursor) {
+                    transactionsStore.delete(cursor.primaryKey);
+                    cursor.continue();
+                }
+            };
+
+            // Delete user's settings
+            settingsStore.delete(userId);
 
             transaction.oncomplete = () => {
                 resolve({
                     success: true,
-                    message: 'All data cleared successfully'
+                    message: 'User data cleared successfully'
                 });
             };
 
             transaction.onerror = () => {
-                console.error('Error clearing data:', transaction.error);
+                console.error('Error clearing user data:', transaction.error);
                 reject({
                     success: false,
-                    message: 'Failed to clear data'
+                    message: 'Failed to clear user data'
                 });
             };
         });

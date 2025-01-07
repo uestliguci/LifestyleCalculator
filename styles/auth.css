@@ -1,0 +1,126 @@
+.login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--background-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.login-card {
+    background: var(--surface-color);
+    padding: 2rem;
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
+    width: 90%;
+    max-width: 400px;
+}
+
+.login-card h2 {
+    text-align: center;
+    margin-bottom: 2rem;
+    color: var(--text-color);
+    font-size: 1.75rem;
+}
+
+.login-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.login-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+    font-weight: 500;
+}
+
+.login-form input {
+    width: 100%;
+    padding: 0.875rem;
+    border: 2px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--background-color);
+    color: var(--text-color);
+    font-size: 16px;
+}
+
+.login-form input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.15);
+}
+
+.error-message {
+    color: var(--danger-color);
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    min-height: 1.2rem;
+}
+
+.login-form button {
+    width: 100%;
+    padding: 1rem;
+    font-size: 1.1rem;
+    border-radius: 10px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+#username-display {
+    font-weight: 500;
+    color: var(--primary-color);
+    font-size: 1.1rem;
+}
+
+/* iPhone 14/15 Pro Max Optimization */
+@media only screen 
+    and (device-width: 430px) 
+    and (device-height: 932px),
+    only screen 
+    and (device-width: 428px) 
+    and (device-height: 926px) {
+    
+    .login-card {
+        padding: 2.5rem;
+        border-radius: 20px;
+    }
+
+    .login-card h2 {
+        font-size: 2rem;
+        margin-bottom: 2.5rem;
+    }
+
+    .login-form .form-group {
+        margin-bottom: 2rem;
+    }
+
+    .login-form input {
+        padding: 1rem;
+        border-radius: 12px;
+        font-size: 1.1rem;
+    }
+
+    .login-form button {
+        padding: 1.25rem;
+        font-size: 1.2rem;
+        border-radius: 12px;
+    }
+
+    .error-message {
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    #username-display {
+        font-size: 1.2rem;
+    }
+}
