@@ -79,6 +79,20 @@ class UIManager {
     }
 
     /**
+     * Update category options based on transaction type
+     * @param {string} type - Transaction type ('income' or 'expense')
+     */
+    updateCategoryOptions(type) {
+        const categorySelect = document.getElementById('category');
+        if (!categorySelect) return;
+
+        const categories = CATEGORIES[type.toLowerCase()] || [];
+        categorySelect.innerHTML = categories.map(category => 
+            `<option value="${category}">${category}</option>`
+        ).join('');
+    }
+
+    /**
      * Switch between different sections
      * @param {string} sectionId - ID of the section to switch to
      */
@@ -182,7 +196,6 @@ class UIManager {
             this.showAlert('Failed to add transaction. Please try again.', 'error');
         }
     }
-
 
     /**
      * Filter transactions based on search input
@@ -299,7 +312,6 @@ class UIManager {
             setTimeout(() => alert.remove(), 300);
         }, ANIMATION_DURATION.alert);
     }
-
 
     /**
      * Setup autocomplete for transaction description

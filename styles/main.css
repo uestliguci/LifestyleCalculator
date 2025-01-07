@@ -391,6 +391,56 @@ tr:last-child td {
     border-bottom: none;
 }
 
+/* Analytics Section */
+.analytics-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.analytics-card {
+    background: var(--surface-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 0.5px solid var(--border-color);
+}
+
+.analytics-card h4 {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+}
+
+.analytics-card .amount {
+    font-size: 1.75rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.analytics-card.income .amount {
+    color: var(--success-color);
+}
+
+.analytics-card.expense .amount {
+    color: var(--danger-color);
+}
+
+.analytics-card.savings .amount {
+    color: var(--primary-color);
+}
+
+.chart-container {
+    background: var(--surface-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin: 1rem;
+    border: 0.5px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+}
+
 /* Transaction Details */
 .transaction-details {
     padding: 1.125rem;
