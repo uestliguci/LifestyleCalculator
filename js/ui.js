@@ -13,6 +13,7 @@ class UIManager {
         this.setupAutocomplete();
         this.currentSection = 'daily-transaction';
         this.initializeDB();
+        this.addSectionTransitionStyles();
     }
 
     async initializeDB() {
@@ -29,8 +30,8 @@ class UIManager {
      * Initialize all event listeners
      */
     initializeEventListeners() {
-        // Navigation
-        document.querySelectorAll('.nav-btn').forEach(btn => {
+        // Tab Bar Navigation
+        document.querySelectorAll('.tab-item').forEach(btn => {
             btn.addEventListener('click', () => this.switchSection(btn.dataset.menu));
         });
 
@@ -82,14 +83,25 @@ class UIManager {
      * @param {string} sectionId - ID of the section to switch to
      */
     switchSection(sectionId) {
-        // Update navigation buttons
-        document.querySelectorAll('.nav-btn').forEach(btn => {
+        // Update tab bar buttons
+        document.querySelectorAll('.tab-item').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.menu === sectionId);
         });
 
-        // Update sections
-        document.querySelectorAll('.menu-section').forEach(section => {
-            section.classList.toggle('active', section.id === sectionId);
+        // Update sections with slide animation
+        const sections = document.querySelectorAll('.menu-section');
+        sections.forEach(section => {
+            if (section.id === sectionId) {
+                section.style.display = 'block';
+                setTimeout(() => section.classList.add('active'), 50);
+            } else {
+                section.classList.remove('active');
+                setTimeout(() => {
+                    if (!section.classList.contains('active')) {
+                        section.style.display = 'none';
+                    }
+                }, 300); // Match animation duration
+            }
         });
 
         this.currentSection = sectionId;
@@ -101,21 +113,18 @@ class UIManager {
      */
     async refreshCurrentSection() {
         try {
+            // Always update balance indicator
+            await this.updateBalanceIndicator();
+
             switch (this.currentSection) {
-                case 'daily-transaction':
-                    await this.updateBalanceIndicator();
+                case 'transactions':
+                    await this.renderTransactionList();
                     break;
-                case 'transaction-database':
-                    await this.renderTransactionTable();
-                    break;
-                case 'monthly-analytics':
+                case 'analytics':
                     await this.updateAnalytics();
                     break;
-                case 'spending-visualization':
-                    await this.updateVisualization();
-                    break;
-                case 'balance-sheet':
-                    await this.updateBalanceSheet();
+                case 'settings':
+                    // Nothing to refresh in settings
                     break;
             }
         } catch (error) {
@@ -174,68 +183,6 @@ class UIManager {
         }
     }
 
-    /**
-     * Update category options based on transaction type
-     * @param {string} type - Transaction type ('income' or 'expense')
-     */
-    updateCategoryOptions(type) {
-        const categorySelect = document.getElementById('category');
-        const categories = CATEGORIES[type] || [];
-        
-        categorySelect.innerHTML = `
-            <option value="">Select Category</option>
-            ${categories.map(category => 
-                `<option value="${category}">${category}</option>`
-            ).join('')}
-        `;
-    }
-
-    /**
-     * Update the monthly balance indicator
-     */
-    async updateBalanceIndicator() {
-        const transactions = await indexedDBStorage.getTransactions();
-        const currentMonth = new Date().toISOString().slice(0, 7);
-        const monthlyTransactions = transactions.filter(t => 
-            t.date.startsWith(currentMonth)
-        );
-
-        const balance = monthlyTransactions.reduce((total, t) => 
-            total + (t.type === 'income' ? 1 : -1) * t.amount
-        , 0);
-
-        const indicator = document.querySelector('.balance-amount');
-        if (indicator) {
-            indicator.textContent = formatCurrency(balance);
-            indicator.className = `balance-amount ${balance >= 0 ? 'positive' : 'negative'}`;
-        }
-    }
-
-    /**
-     * Render the transaction table
-     * @param {Array} transactions - Array of transactions to display
-     */
-    async renderTransactionTable() {
-        const tbody = document.querySelector('#transactions-table tbody');
-        const transactions = await indexedDBStorage.getTransactions();
-        if (!tbody) return;
-
-        tbody.innerHTML = transactions.map(t => `
-            <tr data-id="${t.id}">
-                <td>${formatDate(t.date)}</td>
-                <td>${formatDate(t.date, 'HH:mm')}</td>
-                <td class="transaction-type-${t.type}">${t.type}</td>
-                <td>${t.category}</td>
-                <td>${formatCurrency(t.amount)}</td>
-                <td>${t.description || '-'}</td>
-                <td>
-                    <div class="action-buttons">
-                        <button class="btn-view" onclick="viewTransaction('${t.id}')">View</button>
-                    </div>
-                </td>
-            </tr>
-        `).join('');
-    }
 
     /**
      * Filter transactions based on search input
@@ -248,7 +195,7 @@ class UIManager {
                 String(value).toLowerCase().includes(query.toLowerCase())
             )
         );
-        this.renderTransactionTable(filtered);
+        this.renderTransactionList(filtered);
     }
 
     /**
@@ -307,6 +254,22 @@ class UIManager {
     }
 
     /**
+     * Update balance indicator with current total
+     */
+    async updateBalanceIndicator() {
+        const transactions = await indexedDBStorage.getTransactions();
+        const balance = transactions.reduce((total, t) => 
+            total + (t.type.toLowerCase() === 'income' ? 1 : -1) * parseFloat(t.amount)
+        , 0);
+
+        const indicator = document.querySelector('.balance-amount');
+        if (indicator) {
+            indicator.textContent = formatCurrency(balance);
+            indicator.className = `balance-amount ${balance >= 0 ? 'positive' : 'negative'}`;
+        }
+    }
+
+    /**
      * Update balance sheet charts
      * @param {string} year - Year to analyze (YYYY format)
      */
@@ -337,26 +300,6 @@ class UIManager {
         }, ANIMATION_DURATION.alert);
     }
 
-    /**
-     * Check for budget alerts
-     */
-    async checkBudgetAlerts() {
-        const settings = await indexedDBStorage.getSettings();
-        if (!settings.monthlyBudget) return;
-
-        const currentMonth = new Date().toISOString().slice(0, 7);
-        const monthlyExpenses = (await indexedDBStorage.getTransactions())
-            .filter(t => t.date.startsWith(currentMonth) && t.type === 'expense')
-            .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-
-        const budgetPercentage = (monthlyExpenses / settings.monthlyBudget) * 100;
-
-        if (budgetPercentage >= BUDGET_ALERTS.danger) {
-            this.showAlert('Budget exceeded!', 'error');
-        } else if (budgetPercentage >= BUDGET_ALERTS.warning) {
-            this.showAlert(`Budget usage: ${budgetPercentage.toFixed(1)}%`, 'warning');
-        }
-    }
 
     /**
      * Setup autocomplete for transaction description
@@ -413,7 +356,70 @@ class UIManager {
     }
 
     /**
-     * Export data as JSON or PDF
+     * Add section transition styles
+     */
+    addSectionTransitionStyles() {
+        if (!document.getElementById('section-transition-styles')) {
+            const style = document.createElement('style');
+            style.id = 'section-transition-styles';
+            style.textContent = `
+                .menu-section {
+                    display: none;
+                    opacity: 0;
+                    transform: translateX(20px);
+                    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+                }
+                
+                .menu-section.active {
+                    display: block;
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    /**
+     * Render transaction list in iOS style
+     * @param {Array} transactions - Optional transactions array to render
+     */
+    async renderTransactionList(transactions = null) {
+        const transactionsList = document.getElementById('transactions-list');
+        if (!transactionsList) return;
+
+        if (!transactions) {
+            transactions = await indexedDBStorage.getTransactions();
+        }
+
+        // Group transactions by date
+        const groupedTransactions = transactions.reduce((groups, t) => {
+            const date = new Date(t.date).toLocaleDateString();
+            if (!groups[date]) groups[date] = [];
+            groups[date].push(t);
+            return groups;
+        }, {});
+
+        transactionsList.innerHTML = Object.entries(groupedTransactions).map(([date, dayTransactions]) => `
+            <div class="transaction-group">
+                <div class="transaction-date">${date}</div>
+                ${dayTransactions.map(t => `
+                    <div class="transaction-item" data-id="${t.id}" onclick="viewTransaction('${t.id}')">
+                        <div class="transaction-info">
+                            <div class="transaction-title">${t.category}</div>
+                            <div class="transaction-category">${t.description || 'No description'}</div>
+                        </div>
+                        <div class="transaction-amount ${t.type.toLowerCase()}">
+                            ${t.type === 'expense' ? '-' : '+'}${formatCurrency(t.amount)}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `).join('');
+    }
+
+    /**
+     * Export data as PDF or JSON
      */
     async exportData() {
         try {
@@ -453,63 +459,29 @@ class UIManager {
     showExportDialog() {
         return new Promise((resolve) => {
             const dialog = document.createElement('div');
-            dialog.className = 'export-dialog';
+            dialog.className = 'modal';
+            dialog.style.display = 'flex';
             dialog.innerHTML = `
-                <div class="export-dialog-content">
-                    <h3>Export Format</h3>
-                    <button class="btn-primary" onclick="this.closest('.export-dialog').remove(); window._resolveExportFormat('pdf')">
-                        Bank Statement (PDF)
-                    </button>
-                    <button class="btn-secondary" onclick="this.closest('.export-dialog').remove(); window._resolveExportFormat('json')">
-                        Raw Data (JSON)
-                    </button>
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Export Format</h3>
+                        <button class="btn-close" onclick="this.closest('.modal').remove(); window._resolveExportFormat('cancel')">×</button>
+                    </div>
+                    <div class="export-options">
+                        <button class="btn-primary" onclick="this.closest('.modal').remove(); window._resolveExportFormat('pdf')">
+                            Bank Statement (PDF)
+                        </button>
+                        <button class="btn-secondary" onclick="this.closest('.modal').remove(); window._resolveExportFormat('json')">
+                            Raw Data (JSON)
+                        </button>
+                    </div>
                 </div>
             `;
             
-            // Add dialog styles if not already present
-            if (!document.getElementById('export-dialog-styles')) {
-                const style = document.createElement('style');
-                style.id = 'export-dialog-styles';
-                style.textContent = `
-                    .export-dialog {
-                        position: fixed;
-                        top: 0;
-                        left: 0;
-                        right: 0;
-                        bottom: 0;
-                        background: rgba(0, 0, 0, 0.5);
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        z-index: 1000;
-                        backdrop-filter: blur(5px);
-                    }
-                    .export-dialog-content {
-                        background: var(--surface-color);
-                        padding: 1.5rem;
-                        border-radius: 16px;
-                        box-shadow: var(--shadow-lg);
-                        display: flex;
-                        flex-direction: column;
-                        gap: 1rem;
-                        min-width: 300px;
-                    }
-                    .export-dialog h3 {
-                        margin: 0;
-                        font-size: 1.25rem;
-                        text-align: center;
-                    }
-                    .export-dialog button {
-                        width: 100%;
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-
             // Setup resolver
             window._resolveExportFormat = (format) => {
                 delete window._resolveExportFormat;
-                resolve(format);
+                resolve(format === 'cancel' ? null : format);
             };
 
             document.body.appendChild(dialog);

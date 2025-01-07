@@ -31,10 +31,15 @@ export class PDFExportService {
     }
 
     addHeader(doc) {
-        // Add logo placeholder (could be replaced with actual logo)
+        // Add iOS-style header with logo
+        doc.setFillColor(0, 122, 255); // iOS blue
+        doc.rect(0, 0, doc.internal.pageSize.width, 60, 'F');
+        
+        // Add white text
+        doc.setTextColor(255, 255, 255);
         doc.setFontSize(24);
         doc.setFont('helvetica', 'bold');
-        doc.text('Lifestyle Calculator', 20, 20);
+        doc.text('Lifestyle Calculator', 20, 30);
 
         // Add statement details
         doc.setFontSize(12);
@@ -44,11 +49,10 @@ export class PDFExportService {
             month: 'long',
             day: 'numeric'
         });
-        doc.text('Statement Date: ' + currentDate, 20, 30);
+        doc.text('Statement Date: ' + currentDate, 20, 45);
         
-        // Add divider line
-        doc.setLineWidth(0.5);
-        doc.line(20, 35, 190, 35);
+        // Reset text color for rest of document
+        doc.setTextColor(0, 0, 0);
     }
 
     addSummary(doc, transactions) {
@@ -65,59 +69,100 @@ export class PDFExportService {
 
         const balance = totalIncome - totalExpenses;
 
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Account Summary', 20, 45);
-        
-        doc.setFont('helvetica', 'normal');
-        doc.text('Total Income: ' + totalIncome.toFixed(2), 30, 55);
-        doc.text('Total Expenses: ' + totalExpenses.toFixed(2), 30, 62);
-        doc.text('Current Balance: ' + balance.toFixed(2), 30, 69);
+        // Add summary cards in iOS style
+        const startY = 80;
+        const cardWidth = 50;
+        const margin = 20;
 
-        // Add another divider
-        doc.line(20, 75, 190, 75);
+        // Income Card
+        doc.setFillColor(52, 199, 89); // iOS green
+        doc.roundedRect(margin, startY, cardWidth, 40, 5, 5, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(10);
+        doc.text('Income', margin + 5, startY + 15);
+        doc.setFontSize(12);
+        doc.text(totalIncome.toFixed(2), margin + 5, startY + 30);
+
+        // Expenses Card
+        doc.setFillColor(255, 59, 48); // iOS red
+        doc.roundedRect(margin + cardWidth + 10, startY, cardWidth, 40, 5, 5, 'F');
+        doc.text('Expenses', margin + cardWidth + 15, startY + 15);
+        doc.text(totalExpenses.toFixed(2), margin + cardWidth + 15, startY + 30);
+
+        // Balance Card
+        doc.setFillColor(0, 122, 255); // iOS blue
+        doc.roundedRect(margin + (cardWidth + 10) * 2, startY, cardWidth, 40, 5, 5, 'F');
+        doc.text('Balance', margin + (cardWidth + 10) * 2 + 5, startY + 15);
+        doc.text(balance.toFixed(2), margin + (cardWidth + 10) * 2 + 5, startY + 30);
+
+        // Reset text color
+        doc.setTextColor(0, 0, 0);
     }
 
     addTransactionsTable(doc, transactions) {
         // Prepare table data
         const tableData = transactions.map(t => [
-            t.date,
-            t.time,
+            new Date(t.date).toLocaleDateString(),
             t.type,
             t.category,
             t.amount.toFixed(2),
-            t.currency,
             t.description
         ]);
 
         // Define table headers
         const headers = [
-            ['Date', 'Time', 'Type', 'Category', 'Amount', 'Currency', 'Description']
+            ['Date', 'Type', 'Category', 'Amount', 'Description']
         ];
 
-        // Add table using autoTable plugin
+        // Add table using autoTable plugin with iOS styling
         doc.autoTable({
-            startY: 80,
+            startY: 140,
             head: headers,
             body: tableData,
-            theme: 'grid',
+            theme: 'plain',
             styles: {
                 fontSize: 10,
-                cellPadding: 5,
+                cellPadding: 8,
                 overflow: 'linebreak',
-                halign: 'left'
+                halign: 'left',
+                font: 'helvetica'
             },
             headStyles: {
-                fillColor: [0, 122, 255],
-                textColor: 255,
+                fillColor: [247, 247, 247], // iOS light gray
+                textColor: [142, 142, 147], // iOS secondary text
                 fontSize: 10,
                 fontStyle: 'bold'
             },
-            alternateRowStyles: {
-                fillColor: [245, 245, 245]
-            },
             columnStyles: {
-                4: { halign: 'right' } // Align amount to right
+                0: { cellWidth: 30 },
+                1: { cellWidth: 25 },
+                2: { cellWidth: 35 },
+                3: { cellWidth: 25, halign: 'right' },
+                4: { cellWidth: 'auto' }
+            },
+            didParseCell: function(data) {
+                // Add iOS-style cell styling
+                if (data.row.index === -1) return; // Skip header
+                
+                const type = tableData[data.row.index][1];
+                if (data.column.index === 3) { // Amount column
+                    data.cell.styles.textColor = type.toLowerCase() === 'income' ? 
+                        [52, 199, 89] : // iOS green
+                        [255, 59, 48];  // iOS red
+                }
+            },
+            didDrawCell: function(data) {
+                // Add subtle border
+                if (data.row.index === -1) return; // Skip header
+                
+                const x = data.cell.x;
+                const y = data.cell.y;
+                const w = data.cell.width;
+                const h = data.cell.height;
+                
+                doc.setDrawColor(229, 229, 234); // iOS separator color
+                doc.setLineWidth(0.1);
+                doc.line(x, y + h, x + w, y + h);
             }
         });
     }

@@ -151,4 +151,10 @@ export async function saveEdit(id) {
     }
 }
 
-window.saveEdit = saveEdit;
+// Expose functions to window object
+Object.assign(window, {
+    viewTransaction,
+    editTransaction,
+    deleteTransaction,
+    saveEdit
+});

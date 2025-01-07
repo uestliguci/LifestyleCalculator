@@ -22,7 +22,7 @@
     <!-- Login Overlay -->
     <div class="login-overlay" id="login-overlay">
         <div class="login-card">
-            <h2>Private Login FinSystem</h2>
+            <h2>Private Login</h2>
             <form id="login-form" class="login-form">
                 <div class="form-group">
                     <label for="username">Username</label>
@@ -42,182 +42,167 @@
     <div class="app-container" id="app-container" style="display: none;">
         <header class="app-header">
             <div class="header-content">
-                <h1>Financial Management System</h1>
-                <div class="user-info">
-                    <span id="username-display"></span>
-                    <button class="btn-secondary" onclick="window.logout()">Logout</button>
+                <div class="balance-section">
+                    <h2>Total Balance</h2>
+                    <div class="balance-amount" data-currency="ALL">L 0.00</div>
+                    <div class="balance-actions">
+                        <button class="btn-action" onclick="document.getElementById('add-transaction-modal').style.display='flex'">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Add
+                        </button>
+                        <button class="btn-action" id="export-data">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            Export
+                        </button>
+                    </div>
                 </div>
             </div>
-            <nav class="main-nav">
-                <button class="nav-btn active" data-menu="daily-transaction">Daily Transaction</button>
-                <button class="nav-btn" data-menu="transaction-database">Database</button>
-                <button class="nav-btn" data-menu="monthly-analytics">Analytics</button>
-                <button class="nav-btn" data-menu="spending-visualization">Visualization</button>
-                <button class="nav-btn" data-menu="balance-sheet">Balance Sheet</button>
-            </nav>
         </header>
 
         <main class="app-content">
-            <!-- Daily Transaction Entry -->
-            <section id="daily-transaction" class="menu-section active">
-                <div class="card">
-                    <h2>Daily Transaction Entry</h2>
-                    <div class="balance-indicator">
-                        <span>Monthly Balance:</span>
-                        <span class="balance-amount" data-currency="ALL">L 0.00</span>
-                    </div>
-                    <form id="transaction-form" class="transaction-form">
-                        <div class="form-group">
-                            <label for="transaction-type">Type</label>
-                            <select id="transaction-type" required>
-                                <option value="expense">Expense</option>
-                                <option value="income">Income</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="currency">Currency</label>
-                            <select id="currency" required>
-                                <option value="ALL">Albanian Lek (L)</option>
-                                <option value="USD">US Dollar ($)</option>
-                                <option value="EUR">Euro (€)</option>
-                                <option value="GBP">Pound Sterling (£)</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="amount">Amount</label>
-                            <input type="number" id="amount" step="0.01" min="0" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="category">Category</label>
-                            <select id="category" required>
-                                <option value="">Select Category</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="description">Description</label>
-                            <input type="text" id="description" placeholder="Optional">
-                        </div>
-                        <button type="submit" class="btn-primary">Save Transaction</button>
-                    </form>
+            <!-- Transaction List -->
+            <section id="transactions" class="menu-section active">
+                <div class="section-header">
+                    <h3>Recent Transactions</h3>
+                    <input type="text" id="search-transactions" placeholder="Search transactions...">
+                </div>
+                <div class="transaction-list" id="transactions-list">
+                    <!-- Transactions will be loaded here -->
                 </div>
             </section>
 
-            <!-- Transaction Database -->
-            <section id="transaction-database" class="menu-section">
-                <div class="card">
-                    <h2>Transaction Database</h2>
-                    <div class="database-controls">
-                        <input type="text" id="search-transactions" placeholder="Search transactions...">
-                        <button id="export-data" class="btn-secondary">Export Data</button>
+            <!-- Analytics Section -->
+            <section id="analytics" class="menu-section">
+                <div class="section-header">
+                    <h3>Analytics</h3>
+                    <select id="analytics-period">
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="year">This Year</option>
+                    </select>
+                </div>
+                <div class="analytics-cards">
+                    <div class="analytics-card income">
+                        <h4>Total Income</h4>
+                        <div class="amount">$0.00</div>
                     </div>
-                    <div class="table-container">
-                        <table id="transactions-table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Time</th>
-                                    <th>Type</th>
-                                    <th>Category</th>
-                                    <th>Amount</th>
-                                    <th>Currency</th>
-                                    <th>Description</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
+                    <div class="analytics-card expense">
+                        <h4>Total Expenses</h4>
+                        <div class="amount">$0.00</div>
                     </div>
+                    <div class="analytics-card savings">
+                        <h4>Net Savings</h4>
+                        <div class="amount">$0.00</div>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="spending-chart"></canvas>
                 </div>
             </section>
 
-            <!-- Monthly Analytics -->
-            <section id="monthly-analytics" class="menu-section">
-                <div class="card">
-                    <h2>Monthly Analytics</h2>
-                    <div class="analytics-controls">
-                        <div class="date-selector">
-                            <input type="month" id="analytics-month">
-                        </div>
-                        <div class="currency-selector">
-                            <label for="analytics-currency">Display Currency:</label>
-                            <select id="analytics-currency">
-                                <option value="ALL">Albanian Lek (L)</option>
-                                <option value="USD">US Dollar ($)</option>
-                                <option value="EUR">Euro (€)</option>
-                                <option value="GBP">Pound Sterling (£)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="analytics-grid">
-                        <div class="analytics-card">
-                            <h3>Summary</h3>
-                            <div id="monthly-summary"></div>
-                        </div>
-                        <div class="analytics-card">
-                            <h3>Category Breakdown</h3>
-                            <canvas id="category-chart"></canvas>
-                        </div>
-                        <div class="analytics-card">
-                            <h3>Trend Analysis</h3>
-                            <canvas id="trend-chart"></canvas>
-                        </div>
-                    </div>
+            <!-- Settings Section -->
+            <section id="settings" class="menu-section">
+                <div class="section-header">
+                    <h3>Settings</h3>
                 </div>
-            </section>
-
-            <!-- Spending Visualization -->
-            <section id="spending-visualization" class="menu-section">
-                <div class="card">
-                    <h2>Spending Visualization</h2>
-                    <div class="visualization-controls">
-                        <select id="view-type">
-                            <option value="daily">Daily</option>
-                            <option value="weekly">Weekly</option>
-                            <option value="monthly">Monthly</option>
-                        </select>
-                        <select id="visualization-currency">
+                <div class="settings-list">
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <h4>Currency</h4>
+                            <p>Select your preferred currency</p>
+                        </div>
+                        <select id="currency">
                             <option value="ALL">Albanian Lek (L)</option>
                             <option value="USD">US Dollar ($)</option>
                             <option value="EUR">Euro (€)</option>
                             <option value="GBP">Pound Sterling (£)</option>
                         </select>
                     </div>
-                    <div class="chart-container">
-                        <canvas id="spending-chart"></canvas>
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <h4>Export Data</h4>
+                            <p>Download your transaction data</p>
+                        </div>
+                        <button id="export-data" class="btn-secondary">Export</button>
+                    </div>
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <h4>Account</h4>
+                            <p>Manage your account settings</p>
+                        </div>
+                        <button onclick="window.logout()" class="btn-secondary">Logout</button>
                     </div>
                 </div>
             </section>
 
-            <!-- Balance Sheet -->
-            <section id="balance-sheet" class="menu-section">
-                <div class="card">
-                    <h2>Balance Sheet Analytics</h2>
-                    <div class="balance-controls">
-                        <div class="year-selector">
-                            <select id="balance-sheet-year"></select>
-                        </div>
-                        <div class="currency-selector">
-                            <select id="balance-sheet-currency">
-                                <option value="ALL">Albanian Lek (L)</option>
-                                <option value="USD">US Dollar ($)</option>
-                                <option value="EUR">Euro (€)</option>
-                                <option value="GBP">Pound Sterling (£)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="balance-grid">
-                        <div class="balance-card">
-                            <h3>Monthly Overview</h3>
-                            <canvas id="balance-overview-chart"></canvas>
-                        </div>
-                        <div class="balance-card">
-                            <h3>Savings Analysis</h3>
-                            <canvas id="savings-chart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </section>
         </main>
+
+        <!-- Add Transaction Modal -->
+        <div id="add-transaction-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Add Transaction</h3>
+                    <button class="btn-close" onclick="this.closest('.modal').style.display='none'">×</button>
+                </div>
+                <form id="transaction-form" class="transaction-form">
+                    <div class="form-group">
+                        <label for="transaction-type">Type</label>
+                        <select id="transaction-type" required>
+                            <option value="expense">Expense</option>
+                            <option value="income">Income</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="amount">Amount</label>
+                        <input type="number" id="amount" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="category">Category</label>
+                        <select id="category" required>
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="description">Description</label>
+                        <input type="text" id="description" placeholder="Optional">
+                    </div>
+                    <button type="submit" class="btn-primary">Save Transaction</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- iOS-style Bottom Tab Bar -->
+        <nav class="tab-bar">
+            <button class="tab-item active" data-menu="transactions">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="2" y="3" width="20" height="18" rx="2"></rect>
+                    <line x1="2" y1="9" x2="22" y2="9"></line>
+                </svg>
+                Transactions
+            </button>
+            <button class="tab-item" data-menu="analytics">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                </svg>
+                Analytics
+            </button>
+            <button class="tab-item" data-menu="settings">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+                Settings
+            </button>
+        </nav>
     </div>
 
     <script src="js/config.js" type="module"></script>
