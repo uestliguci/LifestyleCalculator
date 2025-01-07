@@ -2,6 +2,7 @@ import { ANIMATION_DURATION, BUDGET_ALERTS, CATEGORIES } from './config.js';
 import { indexedDBStorage } from './services/indexed-db-storage.js';
 import { formatCurrency, formatDate, debounce, detectAnomalies } from './utils.js';
 import { chartManager } from './charts.js';
+import { pdfExport } from './services/pdf-export.js';
 
 /**
  * UI Manager class to handle all UI-related operations
@@ -412,24 +413,107 @@ class UIManager {
     }
 
     /**
-     * Export data as JSON file
+     * Export data as JSON or PDF
      */
     async exportData() {
-        const data = await indexedDBStorage.exportData();
-        if (!data) {
-            this.showAlert('Failed to export data', 'error');
-            return;
-        }
+        try {
+            // Show export options dialog
+            const format = await this.showExportDialog();
+            
+            if (format === 'pdf') {
+                await pdfExport.generateBankStatement();
+                this.showAlert('Bank statement exported as PDF', 'success');
+            } else if (format === 'json') {
+                const data = await indexedDBStorage.exportData();
+                if (!data) {
+                    this.showAlert('Failed to export data', 'error');
+                    return;
+                }
 
-        const blob = new Blob([data], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `financial_data_${new Date().toISOString().slice(0, 10)}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+                const blob = new Blob([data], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `financial_data_${new Date().toISOString().slice(0, 10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        } catch (error) {
+            console.error('Export error:', error);
+            this.showAlert('Failed to export data', 'error');
+        }
+    }
+
+    /**
+     * Show export format selection dialog
+     * @returns {Promise<string>} Selected format ('pdf' or 'json')
+     */
+    showExportDialog() {
+        return new Promise((resolve) => {
+            const dialog = document.createElement('div');
+            dialog.className = 'export-dialog';
+            dialog.innerHTML = `
+                <div class="export-dialog-content">
+                    <h3>Export Format</h3>
+                    <button class="btn-primary" onclick="this.closest('.export-dialog').remove(); window._resolveExportFormat('pdf')">
+                        Bank Statement (PDF)
+                    </button>
+                    <button class="btn-secondary" onclick="this.closest('.export-dialog').remove(); window._resolveExportFormat('json')">
+                        Raw Data (JSON)
+                    </button>
+                </div>
+            `;
+            
+            // Add dialog styles if not already present
+            if (!document.getElementById('export-dialog-styles')) {
+                const style = document.createElement('style');
+                style.id = 'export-dialog-styles';
+                style.textContent = `
+                    .export-dialog {
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: rgba(0, 0, 0, 0.5);
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        z-index: 1000;
+                        backdrop-filter: blur(5px);
+                    }
+                    .export-dialog-content {
+                        background: var(--surface-color);
+                        padding: 1.5rem;
+                        border-radius: 16px;
+                        box-shadow: var(--shadow-lg);
+                        display: flex;
+                        flex-direction: column;
+                        gap: 1rem;
+                        min-width: 300px;
+                    }
+                    .export-dialog h3 {
+                        margin: 0;
+                        font-size: 1.25rem;
+                        text-align: center;
+                    }
+                    .export-dialog button {
+                        width: 100%;
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+
+            // Setup resolver
+            window._resolveExportFormat = (format) => {
+                delete window._resolveExportFormat;
+                resolve(format);
+            };
+
+            document.body.appendChild(dialog);
+        });
     }
 }
 
