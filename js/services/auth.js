@@ -26,20 +26,46 @@ export class AuthService {
             return 'unsupported';
         }
 
+        console.log('Device Detection Debug:');
+        console.log('User Agent:', userAgent);
+        console.log('Screen:', screenWidth, 'x', screenHeight);
+        console.log('Pixel Ratio:', pixelRatio);
+
         // iPhone 14/16 Pro Max detection
         // Both have 430x932 screen and 3x pixel ratio
         if (screenWidth === 430 && screenHeight === 932 && pixelRatio === 3) {
-            // Since Safari on iOS 17 (iPhone 16) doesn't expose detailed model info,
-            // we'll use iOS version to differentiate
-            const iOSMatch = userAgent.match(/OS (\d+)_/);
-            const iOSVersion = iOSMatch ? parseInt(iOSMatch[1]) : 0;
-            
-            if (iOSVersion >= 17) {
-                return 'iPhone 16 Pro Max';
-            } else {
-                return 'iPhone 14 Pro Max';
+            // Look for model identifiers
+            const modelIdentifiers = {
+                'MYW33': 'iPhone 16 Pro Max',  // iPhone 16 Pro Max
+                'MQ8T3': 'iPhone 14 Pro Max'   // iPhone 14 Pro Max
+            };
+
+            // Try to find model number in user agent
+            for (const [modelId, deviceType] of Object.entries(modelIdentifiers)) {
+                if (userAgent.includes(modelId)) {
+                    console.log(`Detected ${deviceType} by model identifier ${modelId}`);
+                    return deviceType;
+                }
             }
+
+            // If model number not found in user agent, try to detect by screen properties
+            // Additional properties available in Safari
+            const screenRatio = screenHeight / screenWidth;
+            const hasDynamicIsland = typeof window.devicePixelRatio !== 'undefined' && window.devicePixelRatio === 3;
+            
+            console.log('Screen ratio:', screenRatio);
+            console.log('Has Dynamic Island:', hasDynamicIsland);
+
+            // Default to iPhone 16 Pro Max for newer devices
+            if (hasDynamicIsland && screenRatio > 2.1) {
+                console.log('Detected iPhone 16 Pro Max by screen properties');
+                return 'iPhone 16 Pro Max';
+            }
+        } else {
+            console.log('Screen dimensions or pixel ratio not matching');
         }
+        
+        console.log('Device not supported');
         return 'unsupported';
     }
 
