@@ -1,6 +1,6 @@
 import { localStorageManager } from './local-storage-manager.js';
 // jsPDF is loaded globally
-const { jsPDF } = window.jspdf;
+const jsPDF = window.jspdf;
 
 /**
  * Exports transaction data to a professionally formatted PDF document
@@ -36,7 +36,7 @@ export async function exportToPDF() {
         }, { totalCredits: 0, totalDebits: 0 });
 
         // Create PDF document with iOS-friendly settings
-        const doc = new jsPDF.jsPDF({
+        const doc = new jsPDF({
             orientation: 'portrait',
             unit: 'mm',
             format: 'a4'

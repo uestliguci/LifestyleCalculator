@@ -1,103 +1,59 @@
-// Transaction Categories
-const CATEGORIES = {
+/**
+ * Application configuration
+ */
+
+// Transaction categories
+export const CATEGORIES = {
+    expense: [
+        'Food',
+        'Transportation',
+        'Housing',
+        'Utilities',
+        'Healthcare',
+        'Entertainment',
+        'Shopping',
+        'Education',
+        'Personal Care',
+        'Insurance',
+        'Savings',
+        'Other'
+    ],
     income: [
         'Salary',
-        'Bonus',
-        'OTC',
-        'Others'
-    ],
-    expense: [
-        'Ciggies',
-        'Food',
-        'Clothes',
-        'Gifts',
-        'Savings',
-        'Activities',
-        'Online'
+        'Business',
+        'Investments',
+        'Freelance',
+        'Rental',
+        'Other'
     ]
 };
 
-// Currency Configuration
-const CURRENCIES = {
+// Currency configuration
+export const CURRENCIES = {
     ALL: {
-        code: 'ALL',
-        name: 'Albanian Lek',
         symbol: 'Lek',
-        position: 'after' // currency symbol position
+        position: 'after'
     }
 };
 
-// Chart Colors
-const CHART_COLORS = {
-    income: '#2ecc71',
-    expense: '#e74c3c',
-    neutral: '#3498db',
-    background: 'rgba(255, 255, 255, 0.9)'
-};
-
-// Date Formats
-const DATE_FORMATS = {
-    display: {
-        date: 'MMM DD, YYYY',
-        time: 'hh:mm A',
-        month: 'MMMM YYYY'
-    },
-    storage: {
-        date: 'YYYY-MM-DD',
-        time: 'HH:mm:ss',
-        month: 'YYYY-MM'
-    }
-};
-
-// Local Storage Keys
-const STORAGE_KEYS = {
-    transactions: 'lifestyle_calculator_transactions',
-    settings: 'lifestyle_calculator_settings'
-};
-
-// Chart Configuration Defaults
-const CHART_CONFIG = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-        legend: {
-            position: 'bottom',
-            labels: {
-                padding: 20,
-                usePointStyle: true
-            }
-        },
-        tooltip: {
-            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-            titleColor: '#fff',
-            bodyColor: '#fff',
-            padding: 12,
-            cornerRadius: 4
-        }
-    }
-};
-
-// Budget Alert Thresholds (percentage of budget)
-const BUDGET_ALERTS = {
-    warning: 80,  // Show warning when 80% of budget is used
-    danger: 100   // Show danger alert when budget is exceeded
-};
-
-// Animation Durations (in milliseconds)
-const ANIMATION_DURATION = {
-    chart: 800,
+// Animation durations (in milliseconds)
+export const ANIMATION_DURATION = {
+    alert: 3000,
     transition: 300,
-    alert: 5000
+    modal: 200
 };
 
-// Export all configurations in a single export statement
-export {
-    CATEGORIES,
-    CURRENCIES,
-    CHART_COLORS,
-    DATE_FORMATS,
-    STORAGE_KEYS,
-    CHART_CONFIG,
-    BUDGET_ALERTS,
-    ANIMATION_DURATION
-};
+// Budget alerts configuration
+export const BUDGET_ALERTS = [
+    {
+        type: 'total',
+        threshold: 50000,
+        message: 'Monthly expenses have exceeded 50,000 Lek'
+    },
+    {
+        type: 'category',
+        category: 'Food',
+        threshold: 10000,
+        message: 'Food expenses have exceeded 10,000 Lek'
+    }
+];

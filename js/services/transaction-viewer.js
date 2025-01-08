@@ -1,160 +1,80 @@
-import { indexedDBStorage } from './indexed-db-storage.js';
+import { localStorageManager } from './local-storage-manager.js';
 
-export function viewTransaction(id) {
-    const tr = document.querySelector(`tr[data-id="${id}"]`);
-    if (!tr) return;
+/**
+ * View transaction details
+ */
+export async function viewTransaction(id) {
+    try {
+        const transaction = await localStorageManager.getTransaction(id);
+        if (!transaction) {
+            console.error('Transaction not found:', id);
+            return;
+        }
 
-    const oldContent = tr.innerHTML;
-    window.editTransaction = editTransaction;
-    window.deleteTransaction = deleteTransaction;
-    const transaction = {
-        date: tr.cells[0].textContent,
-        time: tr.cells[1].textContent,
-        type: tr.cells[2].textContent,
-        category: tr.cells[3].textContent,
-        amount: tr.cells[4].textContent,
-        description: tr.cells[5].textContent
-    };
+        // Format date
+        const date = new Date(transaction.date);
+        const formattedDate = date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
 
-    tr.innerHTML = `
-        <td colspan="7">
+        // Format amount
+        const formattedAmount = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'ALL',
+            currencyDisplay: 'symbol'
+        }).format(transaction.amount).replace('ALL', 'Lek');
+
+        // Show transaction details
+        const details = `
             <div class="transaction-details">
                 <div class="detail-row">
-                    <span class="detail-label">Date:</span>
-                    <span class="detail-value">${transaction.date}</span>
+                    <span class="label">Date:</span>
+                    <span class="value">${formattedDate}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Time:</span>
-                    <span class="detail-value">${transaction.time}</span>
+                    <span class="label">Type:</span>
+                    <span class="value ${transaction.type.toLowerCase()}">${transaction.type}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Type:</span>
-                    <span class="detail-value transaction-type-${transaction.type.toLowerCase()}">${transaction.type}</span>
+                    <span class="label">Category:</span>
+                    <span class="value">${transaction.category}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Category:</span>
-                    <span class="detail-value">${transaction.category}</span>
+                    <span class="label">Amount:</span>
+                    <span class="value ${transaction.type.toLowerCase()}">${formattedAmount}</span>
                 </div>
+                ${transaction.description ? `
                 <div class="detail-row">
-                    <span class="detail-label">Amount:</span>
-                    <span class="detail-value">${transaction.amount}</span>
+                    <span class="label">Description:</span>
+                    <span class="value">${transaction.description}</span>
                 </div>
-                <div class="detail-row">
-                    <span class="detail-label">Description:</span>
-                    <span class="detail-value">${transaction.description}</span>
-                </div>
-                <div class="action-buttons">
-                    <button type="button" class="btn-edit" onclick="editTransaction('${id}')">Edit</button>
-                    <button type="button" class="btn-delete" onclick="deleteTransaction('${id}')">Delete</button>
-                    <button type="button" class="btn-secondary" onclick="this.closest('tr').innerHTML = '${oldContent.replace(/'/g, "\\'")}')">Close</button>
-                </div>
+                ` : ''}
             </div>
-        </td>
-    `;
-}
+        `;
 
-export async function deleteTransaction(id) {
-    if (confirm('Are you sure you want to delete this transaction?')) {
-        try {
-            const result = await indexedDBStorage.deleteTransaction(id);
-            if (result.success) {
-                const tr = document.querySelector(`tr[data-id="${id}"]`);
-                if (tr) tr.remove();
-            } else {
-                alert('Failed to delete transaction: ' + result.message);
+        // Show in modal
+        const modal = document.getElementById('add-transaction-modal');
+        if (modal) {
+            const modalContent = modal.querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.innerHTML = `
+                    <div class="modal-header">
+                        <h3>Transaction Details</h3>
+                        <button class="btn-close" onclick="this.closest('.modal').style.display='none'">×</button>
+                    </div>
+                    ${details}
+                    <div class="modal-footer">
+                        <button class="btn-secondary" onclick="this.closest('.modal').style.display='none'">Close</button>
+                    </div>
+                `;
+                modal.style.display = 'flex';
             }
-        } catch (error) {
-            console.error('Error deleting transaction:', error);
-            alert('Failed to delete transaction');
-        }
-    }
-}
-
-export async function editTransaction(id) {
-    const tr = document.querySelector(`tr[data-id="${id}"]`);
-    if (!tr) return;
-
-    const transaction = {
-        date: tr.cells[0].textContent,
-        time: tr.cells[1].textContent,
-        type: tr.cells[2].textContent,
-        category: tr.cells[3].textContent,
-        amount: tr.cells[4].textContent.replace(/[^0-9.-]+/g, ''),
-        description: tr.cells[5].textContent
-    };
-
-    const formHtml = `
-        <td colspan="7">
-            <form class="edit-transaction-form" onsubmit="return false;">
-                <div class="form-group">
-                    <label for="edit-date">Date:</label>
-                    <input type="date" id="edit-date" value="${transaction.date}" required>
-                </div>
-                <div class="form-group">
-                    <label for="edit-time">Time:</label>
-                    <input type="time" id="edit-time" value="${transaction.time}" required>
-                </div>
-                <div class="form-group">
-                    <label for="edit-type">Type:</label>
-                    <select id="edit-type" required>
-                        <option value="Income" ${transaction.type === 'Income' ? 'selected' : ''}>Income</option>
-                        <option value="Expense" ${transaction.type === 'Expense' ? 'selected' : ''}>Expense</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="edit-category">Category:</label>
-                    <input type="text" id="edit-category" value="${transaction.category}" required>
-                </div>
-                <div class="form-group">
-                    <label for="edit-amount">Amount:</label>
-                    <input type="number" id="edit-amount" value="${transaction.amount}" step="0.01" required>
-                </div>
-                <div class="form-group">
-                    <label for="edit-description">Description:</label>
-                    <input type="text" id="edit-description" value="${transaction.description}" required>
-                </div>
-                <div class="action-buttons">
-                    <button type="button" class="btn-primary" onclick="saveEdit('${id}')">Save</button>
-                    <button type="button" class="btn-secondary" onclick="this.closest('tr').innerHTML = '${tr.innerHTML.replace(/'/g, "\\'")}')">Cancel</button>
-                </div>
-            </form>
-        </td>
-    `;
-
-    tr.innerHTML = formHtml;
-}
-
-export async function saveEdit(id) {
-    const form = document.querySelector('.edit-transaction-form');
-    if (!form) return;
-
-    const updatedTransaction = {
-        id: id,
-        date: form.querySelector('#edit-date').value,
-        time: form.querySelector('#edit-time').value,
-        type: form.querySelector('#edit-type').value,
-        category: form.querySelector('#edit-category').value,
-        amount: parseFloat(form.querySelector('#edit-amount').value),
-        description: form.querySelector('#edit-description').value
-    };
-
-    try {
-        const result = await indexedDBStorage.updateTransaction(id, updatedTransaction);
-        if (result.success) {
-            location.reload(); // Refresh to show updated data
-        } else {
-            alert('Failed to update transaction: ' + result.message);
         }
     } catch (error) {
-        console.error('Error updating transaction:', error);
-        alert('Failed to update transaction');
+        console.error('Failed to view transaction:', error);
     }
 }
-
-// Expose functions to window object
-Object.assign(window, {
-    viewTransaction,
-    editTransaction,
-    deleteTransaction,
-    saveEdit
-});
