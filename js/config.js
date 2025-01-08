@@ -12,8 +12,8 @@ const API_CONFIG = {
 const isDevelopment = window.location.hostname === 'localhost' || 
                      window.location.hostname === '127.0.0.1';
 
-// Export API configuration
-export const config = {
+// API Configuration
+const config = {
     apiUrl: isDevelopment ? API_CONFIG.development.apiUrl : API_CONFIG.production.apiUrl
 };
 
@@ -110,7 +110,7 @@ const ANIMATION_DURATION = {
     alert: 5000
 };
 
-// Export configurations
+// Export all configurations
 export {
     CATEGORIES,
     CURRENCIES,

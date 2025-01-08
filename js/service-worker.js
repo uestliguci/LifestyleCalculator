@@ -1,40 +1,42 @@
-const CACHE_NAME = 'financial-app-v1';
+const CACHE_NAME = 'financial-app-v2';
 const STATIC_ASSETS = [
-    '/',
-    '/index.html',
-    '/offline.html',
-    '/manifest.json',
-    '/styles/main.css',
-    '/styles/components.css',
-    '/styles/auth.css',
-    '/styles/menu-styles.css',
-    '/styles/balance.css',
-    '/styles/analytics.css',
-    '/js/app.js',
-    '/js/ui.js',
-    '/js/utils.js',
-    '/js/charts.js',
-    '/js/config.js',
-    '/js/services/postgres-storage.js',
-    '/js/services/balance-manager.js',
-    '/js/services/pdf-export.js',
-    '/icons/icon-72x72.png',
-    '/icons/icon-96x96.png',
-    '/icons/icon-128x128.png',
-    '/icons/icon-144x144.png',
-    '/icons/icon-152x152.png',
-    '/icons/icon-192x192.png',
-    '/icons/icon-384x384.png',
-    '/icons/icon-512x512.png',
+    'index.html',
+    'offline.html',
+    'manifest.json',
+    'styles/main.css',
+    'styles/components.css',
+    'styles/auth.css',
+    'styles/menu-styles.css',
+    'styles/balance.css',
+    'styles/analytics.css',
+    'js/app.js',
+    'js/ui.js',
+    'js/utils.js',
+    'js/charts.js',
+    'js/config.js',
+    'js/services/storage-manager.js',
+    'js/services/auth.js',
+    'js/services/balance-manager.js',
+    'js/services/pdf-export.js',
+    'icons/icon-72x72.png',
+    'icons/icon-96x96.png',
+    'icons/icon-128x128.png',
+    'icons/icon-144x144.png',
+    'icons/icon-152x152.png',
+    'icons/icon-192x192.png',
+    'icons/icon-384x384.png',
+    'icons/icon-512x512.png',
     'https://cdn.jsdelivr.net/npm/chart.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js'
+    'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
+    'js/lib/jspdf.umd.min.js',
+    'js/lib/jspdf.plugin.autotable.min.js'
 ];
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
+                console.log('Caching static assets...');
                 // Cache known assets
                 return cache.addAll(STATIC_ASSETS.map(url => {
                     // Convert relative URLs to absolute
@@ -53,6 +55,7 @@ self.addEventListener('activate', (event) => {
             return Promise.all(
                 cacheNames.map(cacheName => {
                     if (cacheName !== CACHE_NAME) {
+                        console.log('Deleting old cache:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
@@ -95,7 +98,7 @@ self.addEventListener('fetch', (event) => {
             .catch(() => {
                 // If both cache and network fail, show offline page
                 if (event.request.mode === 'navigate') {
-                    return caches.match('/offline.html');
+                    return caches.match('offline.html');
                 }
                 return new Response('Network error', { status: 408, statusText: 'Network error' });
             })
