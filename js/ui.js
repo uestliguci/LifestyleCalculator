@@ -546,27 +546,48 @@ class UIManager {
 
         // Create the transactions view
         transactionsList.innerHTML = `
-            <div class="balance-card">
-                <div class="balance-header">
-                    <h2>Total Balance</h2>
-                    <span class="balance-amount ${balance >= 0 ? 'positive' : 'negative'}">
-                        ${formatCurrency(Math.abs(balance))}
-                    </span>
-                    <span class="balance-trend">
-                        ${balance >= 0 ? 'Available Balance' : 'Negative Balance'}
-                    </span>
+            <div class="ios-header">
+                <div class="header-top">
+                    <h1>Transactions</h1>
+                    <div class="header-actions">
+                        <button class="action-button" onclick="ui.exportData()">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                        </button>
+                        <button class="action-button primary" onclick="document.getElementById('add-transaction-modal').style.display='flex'">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="balance-card">
+                    <div class="balance-header">
+                        <h2>Total Balance</h2>
+                        <span class="balance-amount ${balance >= 0 ? 'positive' : 'negative'}">
+                            ${formatCurrency(Math.abs(balance))}
+                        </span>
+                        <span class="balance-trend">
+                            ${balance >= 0 ? 'Available Balance' : 'Negative Balance'}
+                        </span>
+                    </div>
                 </div>
             </div>
 
             <div class="transactions-container">
-                <div class="transactions-header">
-                    <h3>Recent Transactions</h3>
-                    <div class="search-container">
-                        <input type="text" id="search-transactions" placeholder="Search transactions..." class="search-input">
-                        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <div class="ios-searchbar">
+                    <div class="search-wrapper">
+                        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="11" r="8"></circle>
                             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                         </svg>
+                        <input type="text" id="search-transactions" placeholder="Search transactions" class="search-input">
+                        <button class="search-cancel">Cancel</button>
                     </div>
                 </div>
 
@@ -586,54 +607,67 @@ class UIManager {
                                 day: 'numeric'
                             })}</span>
                             <span class="date-total">
-                                ${formatCurrency(dayTransactions.reduce((sum, t) => 
+                                Daily Total: ${formatCurrency(dayTransactions.reduce((sum, t) => 
                                     sum + (t.type === 'income' ? 1 : -1) * parseFloat(t.amount), 0
                                 ))}
                             </span>
                         </div>
-                        ${dayTransactions.map(t => `
-                            <div class="transaction-item" data-id="${t.id}">
-                                <div class="transaction-icon ${t.type.toLowerCase()}">
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        ${t.type === 'income' ? 
-                                            '<path d="M12 3v18M5 10l7-7 7 7"/>' : 
-                                            '<path d="M12 21V3M5 14l7 7 7-7"/>'
-                                        }
-                                    </svg>
-                                </div>
-                                <div class="transaction-info">
-                                    <div class="transaction-primary">
-                                        <span class="transaction-category">${t.category}</span>
-                                        <span class="transaction-amount ${t.type.toLowerCase()}">
+                        <div class="transaction-table">
+                            <div class="table-header">
+                                <div class="col-type">Type</div>
+                                <div class="col-category">Category</div>
+                                <div class="col-description">Description</div>
+                                <div class="col-time">Time</div>
+                                <div class="col-amount">Amount</div>
+                                <div class="col-actions">Actions</div>
+                            </div>
+                            ${dayTransactions.map(t => `
+                                <div class="table-row" data-id="${t.id}">
+                                    <div class="col-type">
+                                        <div class="type-badge ${t.type.toLowerCase()}">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                ${t.type === 'income' ? 
+                                                    '<path d="M12 3v18M5 10l7-7 7 7"/>' : 
+                                                    '<path d="M12 21V3M5 14l7 7 7-7"/>'
+                                                }
+                                            </svg>
+                                            <span>${t.type}</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-category">
+                                        <span class="category-tag">${t.category}</span>
+                                    </div>
+                                    <div class="col-description">
+                                        <span class="description-text">${t.description || 'No description'}</span>
+                                    </div>
+                                    <div class="col-time">
+                                        ${new Date(t.date).toLocaleTimeString('en-US', { 
+                                            hour: '2-digit', 
+                                            minute: '2-digit'
+                                        })}
+                                    </div>
+                                    <div class="col-amount">
+                                        <span class="amount-tag ${t.type.toLowerCase()}">
                                             ${t.type === 'expense' ? '-' : '+'}${formatCurrency(t.amount)}
                                         </span>
                                     </div>
-                                    <div class="transaction-secondary">
-                                        <span class="transaction-description">${t.description || 'No description'}</span>
-                                        <span class="transaction-time">
-                                            ${new Date(t.date).toLocaleTimeString('en-US', { 
-                                                hour: '2-digit', 
-                                                minute: '2-digit'
-                                            })}
-                                        </span>
+                                    <div class="col-actions">
+                                        <button class="btn-edit" onclick="balanceManager.showEditModal('${t.id}')">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                            </svg>
+                                        </button>
+                                        <button class="btn-delete" onclick="balanceManager.showDeleteConfirmation('${t.id}')">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            </svg>
+                                        </button>
                                     </div>
                                 </div>
-                                <div class="transaction-actions">
-                                    <button class="btn-edit" onclick="balanceManager.showEditModal('${t.id}')">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                        </svg>
-                                    </button>
-                                    <button class="btn-delete" onclick="balanceManager.showDeleteConfirmation('${t.id}')">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <polyline points="3 6 5 6 21 6"></polyline>
-                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        `).join('')}
+                            `).join('')}
+                        </div>
                     </div>
                 `).join('')}
             </div>

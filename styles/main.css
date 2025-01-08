@@ -96,34 +96,89 @@ body {
     box-shadow: var(--shadow-sm);
 }
 
-.transactions-header {
+/* iOS Header */
+.ios-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--background-color);
+    padding: 16px 16px 0;
+    margin: -16px -16px 0;
+}
+
+.header-top {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 20px;
+    padding-bottom: 16px;
 }
 
-.transactions-header h3 {
-    font-size: 20px;
-    font-weight: 600;
+.header-top h1 {
+    font-size: 32px;
+    font-weight: 700;
     color: var(--text-primary);
 }
 
-.search-container {
+.header-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.action-button {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-color);
+    color: var(--primary-color);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.action-button:active {
+    transform: scale(0.95);
+}
+
+.action-button.primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+/* iOS Search Bar */
+.ios-searchbar {
+    margin: 16px 0;
+}
+
+.search-wrapper {
     position: relative;
-    flex: 1;
-    max-width: 300px;
-    margin-left: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .search-input {
-    width: 100%;
-    padding: 10px 16px 10px 40px;
+    flex: 1;
+    height: 36px;
+    padding: 0 36px;
     border: none;
-    border-radius: 12px;
-    background: var(--background-color);
-    font-size: 15px;
+    border-radius: 10px;
+    background: var(--surface-color);
+    font-size: 17px;
     color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.search-input:focus {
+    outline: none;
+    background: var(--surface-color);
+}
+
+.search-input::placeholder {
+    color: var(--text-secondary);
 }
 
 .search-icon {
@@ -132,6 +187,40 @@ body {
     top: 50%;
     transform: translateY(-50%);
     color: var(--text-secondary);
+    pointer-events: none;
+}
+
+.search-cancel {
+    display: none;
+    border: none;
+    background: none;
+    color: var(--primary-color);
+    font-size: 17px;
+    padding: 0;
+    cursor: pointer;
+}
+
+.search-input:focus + .search-cancel {
+    display: block;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: dark) {
+    .ios-header {
+        background: var(--background-color-dark);
+    }
+
+    .action-button {
+        background: var(--surface-color-dark);
+    }
+
+    .search-input {
+        background: var(--surface-color-dark);
+    }
+
+    .search-input:focus {
+        background: var(--surface-color-dark);
+    }
 }
 
 .swipe-hint {
@@ -171,21 +260,166 @@ body {
     color: var(--text-primary);
 }
 
-/* Transaction Items */
-.transaction-item {
+/* Transaction Table */
+.transaction-table {
     background: var(--surface-color);
-    padding: 16px;
     border-radius: 16px;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
+    overflow: hidden;
     box-shadow: var(--shadow-sm);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    margin-bottom: 24px;
 }
 
-.transaction-item:active {
-    transform: scale(0.98);
+.table-header {
+    display: grid;
+    grid-template-columns: 100px 120px 1fr 80px 120px 100px;
+    gap: 16px;
+    padding: 12px 16px;
+    background: var(--background-color);
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.table-row {
+    display: grid;
+    grid-template-columns: 100px 120px 1fr 80px 120px 100px;
+    gap: 16px;
+    padding: 16px;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s ease;
+}
+
+.table-row:last-child {
+    border-bottom: none;
+}
+
+.table-row:hover {
+    background-color: var(--background-color);
+}
+
+/* Table Columns */
+.col-type, .col-category, .col-description, .col-time, .col-amount, .col-actions {
+    display: flex;
+    align-items: center;
+}
+
+.type-badge {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.type-badge.income {
+    background: var(--success-bg);
+    color: var(--success-color);
+}
+
+.type-badge.expense {
+    background: var(--danger-bg);
+    color: var(--danger-color);
+}
+
+.category-tag {
+    background: var(--primary-color-light);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.description-text {
+    color: var(--text-secondary);
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.col-time {
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+.amount-tag {
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    min-width: 100px;
+    text-align: right;
+}
+
+.amount-tag.income {
+    color: var(--success-color);
+}
+
+.amount-tag.expense {
+    color: var(--danger-color);
+}
+
+.col-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+/* Responsive Table */
+@media (max-width: 768px) {
+    .transaction-table {
+        border-radius: 12px;
+        margin: 0 -16px;
+    }
+
+    .table-header {
+        display: none;
+    }
+
+    .table-row {
+        display: flex;
+        flex-direction: column;
+        padding: 16px;
+        gap: 8px;
+    }
+
+    .col-type, .col-category, .col-description, .col-time, .col-amount {
+        width: 100%;
+    }
+
+    .col-description {
+        order: 1;
+    }
+
+    .col-amount {
+        order: 2;
+    }
+
+    .col-type {
+        order: 3;
+    }
+
+    .col-category {
+        order: 4;
+    }
+
+    .col-time {
+        order: 5;
+    }
+
+    .col-actions {
+        order: 6;
+        justify-content: flex-start;
+    }
+
+    .amount-tag {
+        font-size: 16px;
+    }
 }
 
 .transaction-icon {
