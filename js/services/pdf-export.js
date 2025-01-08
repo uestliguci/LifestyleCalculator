@@ -1,6 +1,6 @@
 import { storageManager } from './storage-manager.js';
 import { jsPDF } from '../lib/jspdf.umd.min.js';
-import '../lib/jspdf.plugin.autotable.min.js';
+import '../lib/jspdf.plugin.autotable.js';
 
 /**
  * Exports transaction data to a professionally formatted PDF document

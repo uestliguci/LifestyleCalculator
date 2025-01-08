@@ -29,7 +29,7 @@ const STATIC_ASSETS = [
     'https://cdn.jsdelivr.net/npm/chart.js',
     'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
     'js/lib/jspdf.umd.min.js',
-    'js/lib/jspdf.plugin.autotable.min.js'
+    'js/lib/jspdf.plugin.autotable.js'
 ];
 
 self.addEventListener('install', (event) => {
@@ -39,8 +39,8 @@ self.addEventListener('install', (event) => {
                 console.log('Caching static assets...');
                 // Cache known assets
                 return cache.addAll(STATIC_ASSETS.map(url => {
-                    // Convert relative URLs to absolute
-                    return url.startsWith('http') ? url : new URL(url, self.location.origin).href;
+                    // Only convert CDN URLs to absolute, keep local paths relative
+                    return url.startsWith('http') ? url : url;
                 }));
             })
             .catch(error => {
