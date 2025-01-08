@@ -3,6 +3,16 @@ import { storageManager } from './storage-manager.js';
 export class AuthService {
     constructor() {
         this.currentUser = null;
+        this.validUsers = {
+            'jonka': {
+                password: 'bosi777',
+                name: 'Jonka'
+            },
+            'westli': {
+                password: 'admin2025',
+                name: 'Westli'
+            }
+        };
         this.initializeFromStorage();
     }
 
@@ -11,7 +21,12 @@ export class AuthService {
         if (storedUser) {
             try {
                 this.currentUser = JSON.parse(storedUser);
-                storageManager.setCurrentUser(this.currentUser);
+                if (this.validUsers[this.currentUser.username]) {
+                    storageManager.setUserPrefix(this.currentUser.username);
+                } else {
+                    // Invalid stored user, clear it
+                    this.logout();
+                }
             } catch (error) {
                 console.error('Failed to restore user:', error);
                 this.logout();
@@ -28,19 +43,8 @@ export class AuthService {
             };
         }
 
-        // Check for specific users
-        const validUsers = {
-            'jonka': {
-                password: 'bosi777',
-                name: 'Jonka'
-            },
-            'westli': {
-                password: 'admin2025',
-                name: 'Westli'
-            }
-        };
-
-        const userInfo = validUsers[username];
+        // Check user credentials
+        const userInfo = this.validUsers[username];
         if (!userInfo || userInfo.password !== password) {
             return {
                 success: false,
@@ -60,8 +64,8 @@ export class AuthService {
             // Store user session
             localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
             
-            // Initialize user's storage
-            storageManager.setCurrentUser(this.currentUser);
+            // Initialize storage for this user
+            storageManager.setUserPrefix(username);
 
             // Try to restore backup if exists
             const backupKey = `${username}_backup`;
@@ -89,15 +93,17 @@ export class AuthService {
 
     async logout() {
         try {
-            // Export data before logout for backup
-            const data = await storageManager.exportData();
-            const backupKey = `${this.currentUser.username}_backup`;
-            localStorage.setItem(backupKey, data);
+            if (this.currentUser) {
+                // Export data before logout for backup
+                const data = await storageManager.exportData();
+                const backupKey = `${this.currentUser.username}_backup`;
+                localStorage.setItem(backupKey, data);
+            }
 
             // Clear current session
             this.currentUser = null;
             localStorage.removeItem('currentUser');
-            storageManager.setCurrentUser(null);
+            storageManager.clearUserPrefix();
 
             window.location.reload();
         } catch (error) {
@@ -105,7 +111,7 @@ export class AuthService {
             // Force logout even if backup fails
             this.currentUser = null;
             localStorage.removeItem('currentUser');
-            storageManager.setCurrentUser(null);
+            storageManager.clearUserPrefix();
             window.location.reload();
         }
     }
@@ -117,15 +123,23 @@ export class AuthService {
 
         const storedUser = localStorage.getItem('currentUser');
         if (storedUser) {
-            this.currentUser = JSON.parse(storedUser);
-            return this.currentUser;
+            try {
+                const user = JSON.parse(storedUser);
+                if (this.validUsers[user.username]) {
+                    this.currentUser = user;
+                    return user;
+                }
+            } catch (error) {
+                console.error('Failed to parse stored user:', error);
+            }
         }
 
         return null;
     }
 
     isAuthenticated() {
-        return this.getCurrentUser() !== null;
+        const user = this.getCurrentUser();
+        return user !== null && this.validUsers[user.username] !== undefined;
     }
 }
 

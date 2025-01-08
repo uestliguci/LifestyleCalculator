@@ -110,7 +110,7 @@ const ANIMATION_DURATION = {
     alert: 5000
 };
 
-// Export all configurations
+// Export all configurations in a single export statement
 export {
     CATEGORIES,
     CURRENCIES,

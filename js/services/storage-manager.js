@@ -7,28 +7,31 @@ import { validateTransaction } from '../utils.js';
  */
 class StorageManager {
     constructor() {
-        this.currentUser = null;
+        this.userPrefix = null;
+    }
+
+    setUserPrefix(username) {
+        this.userPrefix = username;
         this.initializeStorage();
     }
 
-    setCurrentUser(user) {
-        this.currentUser = user;
-        this.initializeStorage();
+    clearUserPrefix() {
+        this.userPrefix = null;
     }
 
-    getUserKey(key) {
-        if (!this.currentUser) {
-            throw new Error('No user logged in');
+    getStorageKey(key) {
+        if (!this.userPrefix) {
+            throw new Error('No user prefix set');
         }
-        return `${this.currentUser.username}_${key}`;
+        return `${this.userPrefix}_${key}`;
     }
 
     initializeStorage() {
-        if (!this.currentUser) return;
+        if (!this.userPrefix) return;
 
         // Initialize storage with default values if empty
-        const transactionsKey = this.getUserKey(STORAGE_KEYS.transactions);
-        const settingsKey = this.getUserKey(STORAGE_KEYS.settings);
+        const transactionsKey = this.getStorageKey(STORAGE_KEYS.transactions);
+        const settingsKey = this.getStorageKey(STORAGE_KEYS.settings);
 
         if (!localStorage.getItem(transactionsKey)) {
             localStorage.setItem(transactionsKey, JSON.stringify([]));
@@ -45,10 +48,10 @@ class StorageManager {
 
     async getTransactions() {
         try {
-            if (!this.currentUser) {
+            if (!this.userPrefix) {
                 return [];
             }
-            const transactionsKey = this.getUserKey(STORAGE_KEYS.transactions);
+            const transactionsKey = this.getStorageKey(STORAGE_KEYS.transactions);
             return JSON.parse(localStorage.getItem(transactionsKey)) || [];
         } catch (error) {
             console.error('Error reading transactions:', error);
@@ -75,7 +78,7 @@ class StorageManager {
             };
 
             transactions.push(newTransaction);
-            const transactionsKey = this.getUserKey(STORAGE_KEYS.transactions);
+            const transactionsKey = this.getStorageKey(STORAGE_KEYS.transactions);
             localStorage.setItem(transactionsKey, JSON.stringify(transactions));
 
             return {
@@ -118,7 +121,7 @@ class StorageManager {
                 lastModified: new Date().toISOString()
             };
 
-            const transactionsKey = this.getUserKey(STORAGE_KEYS.transactions);
+            const transactionsKey = this.getStorageKey(STORAGE_KEYS.transactions);
             localStorage.setItem(transactionsKey, JSON.stringify(transactions));
 
             return {
@@ -146,7 +149,7 @@ class StorageManager {
                 };
             }
 
-            const transactionsKey = this.getUserKey(STORAGE_KEYS.transactions);
+            const transactionsKey = this.getStorageKey(STORAGE_KEYS.transactions);
             localStorage.setItem(transactionsKey, JSON.stringify(filteredTransactions));
 
             return {
@@ -164,10 +167,10 @@ class StorageManager {
 
     getSettings() {
         try {
-            if (!this.currentUser) {
+            if (!this.userPrefix) {
                 return {};
             }
-            const settingsKey = this.getUserKey(STORAGE_KEYS.settings);
+            const settingsKey = this.getStorageKey(STORAGE_KEYS.settings);
             return JSON.parse(localStorage.getItem(settingsKey)) || {};
         } catch (error) {
             console.error('Error reading settings:', error);
@@ -179,7 +182,7 @@ class StorageManager {
         try {
             const currentSettings = this.getSettings();
             const updatedSettings = { ...currentSettings, ...settings };
-            const settingsKey = this.getUserKey(STORAGE_KEYS.settings);
+            const settingsKey = this.getStorageKey(STORAGE_KEYS.settings);
             localStorage.setItem(settingsKey, JSON.stringify(updatedSettings));
             return { success: true, message: 'Settings updated successfully' };
         } catch (error) {
@@ -210,8 +213,8 @@ class StorageManager {
                 throw new Error('Invalid transactions data');
             }
 
-            const transactionsKey = this.getUserKey(STORAGE_KEYS.transactions);
-            const settingsKey = this.getUserKey(STORAGE_KEYS.settings);
+            const transactionsKey = this.getStorageKey(STORAGE_KEYS.transactions);
+            const settingsKey = this.getStorageKey(STORAGE_KEYS.settings);
             
             localStorage.setItem(transactionsKey, JSON.stringify(data.transactions));
             
@@ -234,8 +237,8 @@ class StorageManager {
 
     async clearData() {
         try {
-            const transactionsKey = this.getUserKey(STORAGE_KEYS.transactions);
-            const settingsKey = this.getUserKey(STORAGE_KEYS.settings);
+            const transactionsKey = this.getStorageKey(STORAGE_KEYS.transactions);
+            const settingsKey = this.getStorageKey(STORAGE_KEYS.settings);
             
             localStorage.setItem(transactionsKey, JSON.stringify([]));
             localStorage.setItem(settingsKey, JSON.stringify({

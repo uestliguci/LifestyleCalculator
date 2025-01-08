@@ -22,7 +22,7 @@
     <!-- Login Overlay -->
     <div class="login-overlay" id="login-overlay">
         <div class="login-card">
-            <h2>Private Login</h2>
+            <h2>Login</h2>
             <form id="login-form" class="login-form">
                 <div class="form-group">
                     <label for="username">Username</label>
@@ -253,20 +253,28 @@
         window.chartManager = chartManager;
         console.log('Chart manager initialized');
 
-        // Load application modules
-        await Promise.all([
-            import('./js/config.js'),
-            import('./js/utils.js'),
-            import('./js/services/storage-manager.js'),
-            import('./js/services/auth.js'),
-            import('./js/services/balance-manager.js'),
-            import('./js/ui.js'),
-            import('./js/app.js')
-        ]);
-
-        // Initialize auth service
-        const { authService } = await import('./js/services/auth.js');
-        window.logout = () => authService.logout();
+        try {
+            // Load core modules first
+            const { config } = await import('./js/config.js');
+            await import('./js/utils.js');
+            
+            // Load services
+            const { storageManager } = await import('./js/services/storage-manager.js');
+            const { authService } = await import('./js/services/auth.js');
+            const { balanceManager } = await import('./js/services/balance-manager.js');
+            
+            // Initialize storage and auth
+            await storageManager.initializeStorage();
+            window.logout = () => authService.logout();
+            
+            // Load UI and app
+            await import('./js/ui.js');
+            await import('./js/app.js');
+            
+            console.log('All modules loaded successfully');
+        } catch (error) {
+            console.error('Module loading error:', error);
+        }
 
         // Register service worker
         if ('serviceWorker' in navigator) {
