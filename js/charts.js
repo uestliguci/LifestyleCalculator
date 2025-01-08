@@ -27,7 +27,8 @@ class ChartManager {
     setupChartDefaults() {
         if (!window.Chart) return;
 
-        Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        // iOS-optimized defaults
+        Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", sans-serif';
         Chart.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim();
         Chart.defaults.scale.grid.color = getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim();
         Chart.defaults.plugins.tooltip.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--surface-color-dark').trim();
@@ -37,6 +38,15 @@ class ChartManager {
         Chart.defaults.plugins.tooltip.borderWidth = 1;
         Chart.defaults.plugins.tooltip.padding = 12;
         Chart.defaults.plugins.tooltip.cornerRadius = 8;
+        Chart.defaults.plugins.tooltip.displayColors = false; // iOS-style tooltips
+        Chart.defaults.plugins.tooltip.intersect = false;
+        Chart.defaults.plugins.tooltip.mode = 'nearest';
+        
+        // iOS performance optimizations
+        Chart.defaults.animation.duration = 250; // Faster animations
+        Chart.defaults.hover.animationDuration = 0; // Instant hover state
+        Chart.defaults.responsiveAnimationDuration = 0; // Instant resize
+        Chart.defaults.elements.point.hitRadius = 20; // Larger touch targets
     }
 
     async ensureInitialized() {
@@ -104,7 +114,22 @@ class ChartManager {
             },
             animation: {
                 animateScale: true,
-                animateRotate: true
+                animateRotate: true,
+                duration: 250 // Faster animations for iOS
+            },
+            // iOS touch optimizations
+            events: ['touchstart', 'touchmove', 'click'],
+            onHover: null, // Disable hover effects for better performance
+            onClick: (e, elements) => {
+                if (elements && elements.length > 0) {
+                    const index = elements[0].index;
+                    const label = data.labels[index];
+                    const value = data.datasets[0].data[index];
+                    // Show native iOS tooltip
+                    if (window.navigator.userAgent.match(/(iPad|iPhone|iPod)/g)) {
+                        alert(`${label}: ${formatCurrency(value)}`);
+                    }
+                }
             }
         };
 
@@ -192,8 +217,26 @@ class ChartManager {
                 }
             },
             animation: {
-                duration: 750,
-                easing: 'easeInOutQuart'
+                duration: 250, // Faster animations for iOS
+                easing: 'easeOutQuad' // Smoother easing
+            },
+            // iOS touch optimizations
+            events: ['touchstart', 'touchmove', 'click'],
+            hover: {
+                mode: 'nearest',
+                intersect: false,
+                animationDuration: 0
+            },
+            // Optimize rendering
+            elements: {
+                line: {
+                    tension: 0.3, // Smoother lines
+                    borderWidth: 2
+                },
+                point: {
+                    hitRadius: 20, // Larger touch targets
+                    hoverRadius: 8
+                }
             }
         };
 

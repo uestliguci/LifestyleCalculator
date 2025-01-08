@@ -1,4 +1,4 @@
-import { postgresStorage } from './services/postgres-storage.js';
+import { storageManager } from './services/storage-manager.js';
 import { ui } from './ui.js';
 import { chartManager } from './charts.js';
 import { CATEGORIES, CURRENCIES } from './config.js';
@@ -22,9 +22,9 @@ class App {
      */
     async initialize() {
         try {
-            // Initialize PostgreSQL
-            await postgresStorage.init();
-            console.log('PostgreSQL initialized successfully');
+            // Initialize storage
+            await storageManager.initializeStorage();
+            console.log('Storage system initialized successfully');
             
             // Setup authentication
             this.setupAuth();
@@ -280,7 +280,7 @@ class App {
     async readAndImportFile(file) {
         const reader = new FileReader();
         reader.onload = async (e) => {
-            const result = await postgresStorage.importData(e.target.result);
+            const result = await storageManager.importData(e.target.result);
             if (result.success) {
                 ui.showAlert('Data imported successfully', 'success');
                 ui.refreshCurrentSection();
