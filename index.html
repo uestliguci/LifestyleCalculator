@@ -40,7 +40,7 @@
         <header class="app-header">
             <div class="header-content">
                 <div class="header-left">
-                    <h1 class="section-title">Overview</h1>
+                    <h1 class="section-title">Transactions</h1>
                 </div>
                 <div class="header-right">
                     <button class="header-button" id="export-data">
@@ -246,52 +246,79 @@
     <script type="module">
         // Helper to get correct module path
         const getModulePath = (path) => {
-            // Check if we're running locally
             const isLocal = window.location.hostname === 'localhost' || 
                           window.location.hostname === '127.0.0.1' ||
                           window.location.protocol === 'file:';
-            // Remove leading ./ or / from path
             const cleanPath = path.replace(/^[./]+/, '');
             return isLocal ? path : `/LifestyleCalculator/${cleanPath}`;
         };
 
-        // Initialize chart manager
-        const { chartManager } = await import(getModulePath('./js/charts.js'));
-        window.chartManager = chartManager;
-        console.log('Chart manager initialized');
-
-        try {
-            // Load core modules
-            await import(getModulePath('./js/utils.js'));
-            await import(getModulePath('./js/config.js'));
-            
-            // Load services first
-            const { localStorageManager } = await import(getModulePath('./js/services/local-storage-manager.js'));
-            const { balanceManager } = await import(getModulePath('./js/services/balance-manager.js'));
-            
-            // Initialize UI last
-            const { ui } = await import(getModulePath('./js/ui.js'));
-            const { app } = await import(getModulePath('./js/app.js'));
-            
-            // Make sure UI is initialized
-            if (ui && app) {
-                console.log('Application initialized successfully');
-                // Initialize transaction form
-                app.updateTransactionForm();
-            }
-        } catch (error) {
-            console.error('Failed to initialize application:', error);
-        }
-
-        // Register service worker
-        if ('serviceWorker' in navigator) {
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', async () => {
             try {
-                const registration = await navigator.serviceWorker.register(getModulePath('./js/service-worker.js'));
-                console.log('ServiceWorker registration successful');
-            } catch (err) {
-                console.log('ServiceWorker registration failed:', err);
+                // Initialize chart manager
+                const { chartManager } = await import(getModulePath('./js/charts.js'));
+                window.chartManager = chartManager;
+
+                // Load core modules
+                await import(getModulePath('./js/utils.js'));
+                await import(getModulePath('./js/config.js'));
+                
+                // Load and initialize services
+                const { localStorageManager } = await import(getModulePath('./js/services/local-storage-manager.js'));
+                const { balanceManager } = await import(getModulePath('./js/services/balance-manager.js'));
+                
+                // Initialize UI and app
+                const { ui } = await import(getModulePath('./js/ui.js'));
+                const { app } = await import(getModulePath('./js/app.js'));
+                
+                // Register service worker
+                if ('serviceWorker' in navigator) {
+                    try {
+                        await navigator.serviceWorker.register(getModulePath('./js/service-worker.js'));
+                        console.log('ServiceWorker registration successful');
+                    } catch (err) {
+                        console.error('ServiceWorker registration failed:', err);
+                    }
+                }
+
+                console.log('Application initialized successfully');
+            } catch (error) {
+                console.error('Failed to initialize application:', error);
+                document.body.innerHTML = `
+                    <div style="
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        background: var(--background-color);
+                        color: var(--text-primary);
+                        padding: 20px;
+                        text-align: center;
+                        font-family: -apple-system, system-ui, sans-serif;
+                    ">
+                        <div>
+                            <h2 style="margin-bottom: 16px;">Failed to initialize application</h2>
+                            <p style="color: var(--text-secondary);">Please check your connection and refresh the page.</p>
+                            <button onclick="location.reload()" style="
+                                margin-top: 20px;
+                                padding: 12px 24px;
+                                background: var(--primary-color);
+                                color: white;
+                                border: none;
+                                border-radius: 10px;
+                                font-size: 16px;
+                                cursor: pointer;
+                            ">Refresh Page</button>
+                        </div>
+                    </div>
+                `;
             }
-        }
+        });
     </script>
 </body>
 </html>

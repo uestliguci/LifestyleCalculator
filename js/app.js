@@ -63,11 +63,22 @@ class App {
             // Initialize form when modal is shown
             addButton.addEventListener('click', () => {
                 modal.style.display = 'flex';
+                // Reset form and initialize categories
+                const form = document.getElementById('transaction-form');
+                form?.reset();
                 this.updateTransactionForm();
+                // Focus amount field
+                setTimeout(() => {
+                    document.getElementById('amount')?.focus();
+                }, 300);
             });
 
             // Update categories when type changes
-            typeSelect.addEventListener('change', () => this.updateTransactionForm());
+            typeSelect.addEventListener('change', () => {
+                this.updateTransactionForm();
+                // Re-focus amount field
+                document.getElementById('amount')?.focus();
+            });
 
             // Close modal on backdrop click
             modal.addEventListener('click', (e) => {
