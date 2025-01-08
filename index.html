@@ -12,7 +12,6 @@
             const isLocal = window.location.hostname === 'localhost' || 
                           window.location.hostname === '127.0.0.1' ||
                           window.location.protocol === 'file:';
-            // Remove leading ./ or / from path
             const cleanPath = path.replace(/^[./]+/, '');
             return isLocal ? path : `/LifestyleCalculator/${cleanPath}`;
         };
@@ -240,7 +239,12 @@
     <!-- Load libraries -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="js/lib/jspdf.umd.min.js" onload="this.src = getAssetPath(this.getAttribute('src'))"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.1/jspdf.plugin.autotable.min.js"></script>
+    <script>
+        // Initialize jsPDF
+        window.jspdf = window.jspdf || {};
+    </script>
 
     <!-- Initialize application -->
     <script type="module">
@@ -256,9 +260,21 @@
         // Wait for DOM to be ready
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                // Initialize chart manager
-                const { chartManager } = await import(getModulePath('./js/charts.js'));
-                window.chartManager = chartManager;
+                // Initialize libraries
+                try {
+                    // Initialize chart manager
+                    const { chartManager } = await import(getModulePath('./js/charts.js'));
+                    window.chartManager = chartManager;
+                    console.log('Chart manager initialized');
+
+                    // Verify jsPDF is loaded
+                    if (!window.jspdf || !window.jspdf.jsPDF) {
+                        throw new Error('jsPDF library not loaded properly');
+                    }
+                } catch (error) {
+                    console.error('Library initialization error:', error);
+                    throw error;
+                }
 
                 // Load core modules
                 await import(getModulePath('./js/utils.js'));
