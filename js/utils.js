@@ -34,10 +34,10 @@ export function formatDate(date, format = DATE_FORMATS.display.date) {
  * @returns {string} Formatted currency string
  */
 export function formatCurrency(amount) {
-    return `L ${new Intl.NumberFormat('en-US', {
+    return `${new Intl.NumberFormat('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2
-    }).format(amount)}`;
+    }).format(amount)} Lek`;
 }
 
 /**

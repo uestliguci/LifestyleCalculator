@@ -1,0 +1,238 @@
+/* Analytics Period Selector */
+.analytics-period-selector {
+    display: flex;
+    gap: 0.5rem;
+    padding: 1rem;
+    margin: 1rem;
+    background: var(--surface-color);
+    border-radius: 16px;
+    box-shadow: var(--shadow-sm);
+}
+
+.period-btn {
+    flex: 1;
+    padding: 0.75rem;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.period-btn.active {
+    background: var(--primary-color);
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Analytics Cards */
+.analytics-cards {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    padding: 1rem;
+    animation: slideIn 0.3s ease-out;
+}
+
+.analytics-card {
+    background: var(--surface-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 0.5px solid var(--border-color);
+    transition: transform 0.2s ease;
+}
+
+.analytics-card:active {
+    transform: scale(0.98);
+}
+
+.analytics-card h4 {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    margin-bottom: 0.75rem;
+    font-weight: 500;
+}
+
+.analytics-card .amount {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-color);
+    margin-bottom: 0.5rem;
+}
+
+.analytics-card .trend {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.analytics-card .trend.positive {
+    color: var(--success-color);
+}
+
+.analytics-card .trend.negative {
+    color: var(--danger-color);
+}
+
+/* Chart Sections */
+.chart-section {
+    background: var(--surface-color);
+    border-radius: 16px;
+    margin: 1rem;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 0.5px solid var(--border-color);
+    animation: slideIn 0.3s ease-out;
+    animation-fill-mode: both;
+}
+
+.chart-section:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.chart-header h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0;
+}
+
+.btn-export {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    background: var(--primary-color);
+    color: white;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.btn-export:hover {
+    background: var(--primary-color-dark);
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin-bottom: 1.5rem;
+}
+
+/* Chart Legend */
+.chart-legend {
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.legend-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+}
+
+.legend-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+}
+
+.legend-label {
+    font-size: 0.875rem;
+    color: var(--text-color);
+}
+
+.legend-value {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-left: auto;
+}
+
+/* Chart Summary */
+.chart-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.summary-item {
+    background: var(--background-color);
+    padding: 1rem;
+    border-radius: 12px;
+}
+
+.summary-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.summary-value {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+/* Animations */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    .analytics-card,
+    .chart-section {
+        background: var(--surface-color-dark);
+    }
+
+    .summary-item {
+        background: var(--background-color-dark);
+    }
+}
+
+/* Safe Area Support */
+@supports (padding: max(0px)) {
+    .analytics-period-selector,
+    .analytics-cards,
+    .chart-section {
+        padding-left: max(1rem, env(safe-area-inset-left));
+        padding-right: max(1rem, env(safe-area-inset-right));
+    }
+}

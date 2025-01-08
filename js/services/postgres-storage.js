@@ -60,6 +60,50 @@ class PostgresStorage {
     }
 
     /**
+     * Update a transaction
+     */
+    async updateTransaction(transaction) {
+        try {
+            const response = await fetch(`${this.baseUrl}/transactions/${transaction.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(transaction)
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to update transaction');
+            }
+
+            return { success: true };
+        } catch (error) {
+            console.error('Update transaction error:', error);
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
+     * Delete a transaction
+     */
+    async deleteTransaction(id) {
+        try {
+            const response = await fetch(`${this.baseUrl}/transactions/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to delete transaction');
+            }
+
+            return { success: true };
+        } catch (error) {
+            console.error('Delete transaction error:', error);
+            return { success: false, message: error.message };
+        }
+    }
+
+    /**
      * Get all transactions
      */
     async getAllTransactions() {

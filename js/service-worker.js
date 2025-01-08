@@ -1,38 +1,57 @@
-const CACHE_NAME = 'finance-app-v2';
-const ASSETS_TO_CACHE = [
-    './',
-    './index.html',
-    './manifest.json',
-    './styles/main.css',
-    './styles/components.css',
-    './js/app.js',
-    './js/ui.js',
-    './js/charts.js',
-    './js/config.js',
-    './js/utils.js',
-    './js/services/indexed-db-storage.js',
-    './js/services/transaction-viewer.js',
+const CACHE_NAME = 'financial-app-v1';
+const STATIC_ASSETS = [
+    '/',
+    '/index.html',
+    '/offline.html',
+    '/manifest.json',
+    '/styles/main.css',
+    '/styles/components.css',
+    '/styles/auth.css',
+    '/styles/menu-styles.css',
+    '/styles/balance.css',
+    '/styles/analytics.css',
+    '/js/app.js',
+    '/js/ui.js',
+    '/js/utils.js',
+    '/js/charts.js',
+    '/js/config.js',
+    '/js/services/postgres-storage.js',
+    '/js/services/balance-manager.js',
+    '/js/services/pdf-export.js',
+    '/icons/icon-72x72.png',
+    '/icons/icon-96x96.png',
+    '/icons/icon-128x128.png',
+    '/icons/icon-144x144.png',
+    '/icons/icon-152x152.png',
+    '/icons/icon-192x192.png',
+    '/icons/icon-384x384.png',
+    '/icons/icon-512x512.png',
     'https://cdn.jsdelivr.net/npm/chart.js',
-    './offline.html'
+    'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+    'https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js'
 ];
 
-// Install service worker and cache assets
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then((cache) => {
-                return cache.addAll(ASSETS_TO_CACHE);
+            .then(cache => {
+                // Cache known assets
+                return cache.addAll(STATIC_ASSETS.map(url => {
+                    // Convert relative URLs to absolute
+                    return url.startsWith('http') ? url : new URL(url, self.location.origin).href;
+                }));
             })
-            .then(() => self.skipWaiting())
+            .catch(error => {
+                console.error('Cache installation failed:', error);
+            })
     );
 });
 
-// Clean up old caches
 self.addEventListener('activate', (event) => {
     event.waitUntil(
-        caches.keys().then((cacheNames) => {
+        caches.keys().then(cacheNames => {
             return Promise.all(
-                cacheNames.map((cacheName) => {
+                cacheNames.map(cacheName => {
                     if (cacheName !== CACHE_NAME) {
                         return caches.delete(cacheName);
                     }
@@ -42,77 +61,71 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Fetch strategy: Network first, falling back to cache
 self.addEventListener('fetch', (event) => {
-    // Skip cross-origin requests except for CDN
-    if (!event.request.url.startsWith(self.location.origin) && 
-        !event.request.url.startsWith('https://cdn.jsdelivr.net')) {
+    // Skip PDF exports and other non-GET requests
+    if (event.request.method !== 'GET' || 
+        event.request.url.endsWith('.pdf')) {
         return;
     }
 
     event.respondWith(
-        fetch(event.request)
-            .then((response) => {
-                // Cache successful responses
-                if (response.ok) {
-                    const responseClone = response.clone();
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, responseClone);
-                    });
+        caches.match(event.request)
+            .then(response => {
+                if (response) {
+                    return response;
                 }
-                return response;
+
+                return fetch(event.request).then(response => {
+                    // Check if we received a valid response
+                    if (!response || response.status !== 200 || response.type !== 'basic') {
+                        return response;
+                    }
+
+                    // Clone the response as it can only be consumed once
+                    const responseToCache = response.clone();
+
+                    caches.open(CACHE_NAME)
+                        .then(cache => {
+                            cache.put(event.request, responseToCache);
+                        });
+
+                    return response;
+                });
             })
             .catch(() => {
-                // Return cached response or offline page
-                return caches.match(event.request)
-                    .then((response) => {
-                        if (response) {
-                            return response;
-                        }
-                        // If the request is for a page, return the offline page
-                        if (event.request.mode === 'navigate') {
-                            return caches.match('/offline.html');
-                        }
-                        return new Response('', {
-                            status: 408,
-                            statusText: 'Request timed out'
-                        });
-                    });
+                // If both cache and network fail, show offline page
+                if (event.request.mode === 'navigate') {
+                    return caches.match('/offline.html');
+                }
+                return new Response('Network error', { status: 408, statusText: 'Network error' });
             })
     );
 });
 
-// Handle push notifications
-self.addEventListener('push', (event) => {
-    const options = {
-        body: event.data.text(),
-        icon: '/icons/icon-192x192.png',
-        badge: '/icons/badge-72x72.png',
-        vibrate: [100, 50, 100],
-        data: {
-            dateOfArrival: Date.now(),
-            primaryKey: 1
-        },
-        actions: [
-            {
-                action: 'view',
-                title: 'View App'
-            }
-        ]
-    };
-
-    event.waitUntil(
-        self.registration.showNotification('Financial Management System', options)
-    );
-});
-
-// Handle notification clicks
-self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
-
-    if (event.action === 'view') {
+// Handle PDF export requests
+self.addEventListener('message', (event) => {
+    if (event.data.type === 'EXPORT_PDF') {
+        // Skip caching for PDF exports
         event.waitUntil(
-            clients.openWindow('/')
+            fetch(event.data.url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/pdf'
+                }
+            }).then(response => {
+                return response.blob();
+            }).then(blob => {
+                // Send the PDF blob back to the client
+                event.ports[0].postMessage({
+                    type: 'PDF_READY',
+                    blob: blob
+                });
+            }).catch(error => {
+                event.ports[0].postMessage({
+                    type: 'PDF_ERROR',
+                    error: error.message
+                });
+            })
         );
     }
 });

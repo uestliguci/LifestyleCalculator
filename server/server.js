@@ -141,6 +141,49 @@ app.get('/transactions/:userId', async (req, res) => {
     }
 });
 
+// Update transaction
+app.put('/transactions/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { type, amount, category, description } = req.body;
+        
+        const result = await pool.query(
+            'UPDATE transactions SET type = $1, amount = $2, category = $3, description = $4 WHERE id = $5 RETURNING *',
+            [type, amount, category, description, id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Transaction not found' });
+        }
+
+        res.json({ success: true, transaction: result.rows[0] });
+    } catch (error) {
+        console.error('Update transaction error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// Delete transaction
+app.delete('/transactions/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const result = await pool.query(
+            'DELETE FROM transactions WHERE id = $1 RETURNING *',
+            [id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Transaction not found' });
+        }
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Delete transaction error:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // Import transactions
 app.post('/transactions/import', async (req, res) => {
     const client = await pool.connect();

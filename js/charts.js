@@ -1,323 +1,348 @@
-import { CHART_COLORS, CHART_CONFIG } from './config.js';
-import { formatCurrency, formatDate, groupTransactionsByPeriod } from './utils.js';
+import { formatCurrency } from './utils.js';
 
-/**
- * Chart manager class to handle all chart-related operations
- */
 class ChartManager {
     constructor() {
         this.charts = new Map();
+        this.initialized = false;
+        
+        // Initialize async
+        this.initializeAsync();
     }
 
-    /**
-     * Create or update category breakdown chart
-     * @param {string} canvasId - Canvas element ID
-     * @param {Array} transactions - Transaction data
-     */
-    updateCategoryChart(canvasId, transactions) {
-        const categoryData = this.calculateCategoryData(transactions);
-
-        const config = {
-            ...CHART_CONFIG,
-            type: 'doughnut',
-            data: {
-                labels: categoryData.labels,
-                datasets: [{
-                    data: categoryData.values,
-                    backgroundColor: this.generateColors(categoryData.labels.length),
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                ...CHART_CONFIG.plugins,
-                cutout: '60%',
-                plugins: {
-                    tooltip: {
-                        callbacks: {
-                            label: (context) => {
-                                const value = context.raw;
-                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                const percentage = ((value / total) * 100).toFixed(1);
-                                return `${formatCurrency(value)} (${percentage}%)`;
-                            }
-                        }
-                    }
-                }
+    async initializeAsync() {
+        try {
+            // Wait for Chart.js to be available
+            while (!window.Chart) {
+                await new Promise(resolve => setTimeout(resolve, 100));
             }
+
+            this.setupChartDefaults();
+            this.initialized = true;
+            console.log('Chart manager initialized with defaults');
+        } catch (error) {
+            console.error('Failed to initialize chart manager:', error);
+        }
+    }
+
+    setupChartDefaults() {
+        if (!window.Chart) return;
+
+        Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        Chart.defaults.color = getComputedStyle(document.documentElement).getPropertyValue('--text-secondary').trim();
+        Chart.defaults.scale.grid.color = getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim();
+        Chart.defaults.plugins.tooltip.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--surface-color-dark').trim();
+        Chart.defaults.plugins.tooltip.titleColor = '#fff';
+        Chart.defaults.plugins.tooltip.bodyColor = '#fff';
+        Chart.defaults.plugins.tooltip.borderColor = getComputedStyle(document.documentElement).getPropertyValue('--border-color').trim();
+        Chart.defaults.plugins.tooltip.borderWidth = 1;
+        Chart.defaults.plugins.tooltip.padding = 12;
+        Chart.defaults.plugins.tooltip.cornerRadius = 8;
+    }
+
+    async ensureInitialized() {
+        if (!this.initialized) {
+            await this.initializeAsync();
+        }
+    }
+
+    async updateCategoryChart(canvasId, transactions) {
+        await this.ensureInitialized();
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+
+        // Destroy existing chart
+        if (this.charts.has(canvasId)) {
+            this.charts.get(canvasId).destroy();
+        }
+
+        // Calculate category totals
+        const categoryTotals = transactions
+            .filter(t => t.type === 'expense')
+            .reduce((acc, t) => {
+                acc[t.category] = (acc[t.category] || 0) + parseFloat(t.amount);
+                return acc;
+            }, {});
+
+        // Sort categories by amount
+        const sortedCategories = Object.entries(categoryTotals)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 6); // Show top 6 categories
+
+        const data = {
+            labels: sortedCategories.map(([category]) => category),
+            datasets: [{
+                data: sortedCategories.map(([,amount]) => amount),
+                backgroundColor: [
+                    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEEAD', '#D4A5A5'
+                ],
+                borderWidth: 0,
+                borderRadius: 8
+            }]
         };
 
-        this.createOrUpdateChart(canvasId, config);
-    }
-
-    /**
-     * Create or update spending trend chart
-     * @param {string} canvasId - Canvas element ID
-     * @param {Array} transactions - Transaction data
-     * @param {string} period - Time period ('daily', 'weekly', 'monthly')
-     */
-    updateTrendChart(canvasId, transactions, period) {
-        const groupedData = groupTransactionsByPeriod(transactions, period);
-        const labels = Object.keys(groupedData).sort();
-        
-        const incomeData = labels.map(date => 
-            groupedData[date]
-                .filter(t => t.type === 'income')
-                .reduce((sum, t) => sum + parseFloat(t.amount), 0)
-        );
-
-        const expenseData = labels.map(date => 
-            groupedData[date]
-                .filter(t => t.type === 'expense')
-                .reduce((sum, t) => sum + parseFloat(t.amount), 0)
-        );
-
-        const config = {
-            ...CHART_CONFIG,
-            type: 'line',
-            data: {
-                labels: labels.map(date => formatDate(date)),
-                datasets: [
-                    {
-                        label: 'Income',
-                        data: incomeData,
-                        borderColor: CHART_COLORS.income,
-                        backgroundColor: CHART_COLORS.income + '40',
-                        fill: true
-                    },
-                    {
-                        label: 'Expenses',
-                        data: expenseData,
-                        borderColor: CHART_COLORS.expense,
-                        backgroundColor: CHART_COLORS.expense + '40',
-                        fill: true
-                    }
-                ]
-            },
-            options: {
-                ...CHART_CONFIG.plugins,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: value => formatCurrency(value)
-                        }
+        const options = {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
                     }
                 },
-                interaction: {
-                    intersect: false,
-                    mode: 'index'
-                }
-            }
-        };
-
-        this.createOrUpdateChart(canvasId, config);
-    }
-
-    /**
-     * Create or update balance sheet chart
-     * @param {string} canvasId - Canvas element ID
-     * @param {Array} transactions - Transaction data
-     */
-    updateBalanceChart(canvasId, transactions) {
-        const monthlyData = this.calculateMonthlyBalances(transactions);
-
-        const config = {
-            ...CHART_CONFIG,
-            type: 'bar',
-            data: {
-                labels: monthlyData.labels,
-                datasets: [
-                    {
-                        label: 'Net Balance',
-                        data: monthlyData.balances,
-                        backgroundColor: monthlyData.balances.map(value => 
-                            value >= 0 ? CHART_COLORS.income : CHART_COLORS.expense
-                        ),
-                        order: 2
-                    },
-                    {
-                        label: 'Trend',
-                        data: monthlyData.balances,
-                        type: 'line',
-                        borderColor: CHART_COLORS.neutral,
-                        fill: false,
-                        tension: 0.4,
-                        order: 1
-                    }
-                ]
-            },
-            options: {
-                ...CHART_CONFIG.plugins,
-                scales: {
-                    y: {
-                        ticks: {
-                            callback: value => formatCurrency(value)
+                tooltip: {
+                    callbacks: {
+                        label: (context) => {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.raw / total) * 100).toFixed(1);
+                            return `${formatCurrency(context.raw)} (${percentage}%)`;
                         }
                     }
                 }
+            },
+            animation: {
+                animateScale: true,
+                animateRotate: true
             }
         };
 
-        this.createOrUpdateChart(canvasId, config);
+        const chart = new Chart(ctx, {
+            type: 'doughnut',
+            data: data,
+            options: options
+        });
+
+        this.charts.set(canvasId, chart);
     }
 
-    /**
-     * Create or update savings analysis chart
-     * @param {string} canvasId - Canvas element ID
-     * @param {Array} transactions - Transaction data
-     */
-    updateSavingsChart(canvasId, transactions) {
-        const savingsData = this.calculateSavingsData(transactions);
+    async updateTrendChart(canvasId, transactions, period = 'week') {
+        await this.ensureInitialized();
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
 
-        const config = {
-            ...CHART_CONFIG,
+        // Destroy existing chart
+        if (this.charts.has(canvasId)) {
+            this.charts.get(canvasId).destroy();
+        }
+
+        // Group transactions by date
+        const groupedData = this.groupTransactionsByPeriod(transactions, period);
+        const dates = Array.from(groupedData.keys()).sort();
+
+        const datasets = [{
+            label: 'Income',
+            data: dates.map(date => groupedData.get(date).income || 0),
+            borderColor: '#4ECDC4',
+            backgroundColor: 'rgba(78, 205, 196, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6
+        }, {
+            label: 'Expenses',
+            data: dates.map(date => groupedData.get(date).expenses || 0),
+            borderColor: '#FF6B6B',
+            backgroundColor: 'rgba(255, 107, 107, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointRadius: 4,
+            pointHoverRadius: 6
+        }];
+
+        const options = {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (context) => {
+                            return `${context.dataset.label}: ${formatCurrency(context.raw)}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        maxRotation: 0
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: (value) => formatCurrency(value)
+                    }
+                }
+            },
+            animation: {
+                duration: 750,
+                easing: 'easeInOutQuart'
+            }
+        };
+
+        const chart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: savingsData.labels,
-                datasets: [{
-                    label: 'Savings Rate',
-                    data: savingsData.rates,
-                    borderColor: CHART_COLORS.neutral,
-                    backgroundColor: CHART_COLORS.neutral + '40',
-                    fill: true,
-                    tension: 0.4
-                }]
+                labels: this.formatDates(dates, period),
+                datasets: datasets
             },
-            options: {
-                ...CHART_CONFIG.plugins,
-                scales: {
-                    y: {
-                        min: 0,
-                        max: 100,
-                        ticks: {
-                            callback: value => value + '%'
-                        }
-                    }
-                }
-            }
-        };
-
-        this.createOrUpdateChart(canvasId, config);
-    }
-
-    /**
-     * Calculate category breakdown data
-     * @param {Array} transactions - Transaction data
-     * @returns {Object} Category labels and values
-     */
-    calculateCategoryData(transactions) {
-        const categoryTotals = transactions.reduce((acc, transaction) => {
-            const { category, amount, type } = transaction;
-            if (!acc[category]) {
-                acc[category] = 0;
-            }
-            acc[category] += type === 'expense' ? parseFloat(amount) : 0;
-            return acc;
-        }, {});
-
-        return {
-            labels: Object.keys(categoryTotals),
-            values: Object.values(categoryTotals)
-        };
-    }
-
-    /**
-     * Calculate monthly balance data
-     * @param {Array} transactions - Transaction data
-     * @returns {Object} Monthly labels and balance values
-     */
-    calculateMonthlyBalances(transactions) {
-        const monthlyData = groupTransactionsByPeriod(transactions, 'month');
-        const sortedMonths = Object.keys(monthlyData).sort();
-
-        const balances = sortedMonths.map(month => {
-            const monthTransactions = monthlyData[month];
-            return monthTransactions.reduce((balance, t) => 
-                balance + (t.type === 'income' ? 1 : -1) * parseFloat(t.amount)
-            , 0);
+            options: options
         });
 
-        return {
-            labels: sortedMonths.map(month => formatDate(month, 'MMM YYYY')),
-            balances
-        };
+        this.charts.set(canvasId, chart);
     }
 
-    /**
-     * Calculate savings rate data
-     * @param {Array} transactions - Transaction data
-     * @returns {Object} Monthly labels and savings rate values
-     */
-    calculateSavingsData(transactions) {
-        const monthlyData = groupTransactionsByPeriod(transactions, 'month');
-        const sortedMonths = Object.keys(monthlyData).sort();
+    groupTransactionsByPeriod(transactions, period) {
+        const groupedData = new Map();
+        const dateFormat = period === 'year' ? 'YYYY-MM' : 'YYYY-MM-DD';
 
-        const rates = sortedMonths.map(month => {
-            const monthTransactions = monthlyData[month];
-            const income = monthTransactions
-                .filter(t => t.type === 'income')
-                .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-            const expenses = monthTransactions
-                .filter(t => t.type === 'expense')
-                .reduce((sum, t) => sum + parseFloat(t.amount), 0);
-            
-            return income > 0 ? ((income - expenses) / income) * 100 : 0;
+        transactions.forEach(t => {
+            const date = new Date(t.date);
+            let key;
+
+            switch (period) {
+                case 'week':
+                    key = date.toISOString().split('T')[0];
+                    break;
+                case 'month':
+                    key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    break;
+                case 'year':
+                    key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+                    break;
+            }
+
+            if (!groupedData.has(key)) {
+                groupedData.set(key, { income: 0, expenses: 0 });
+            }
+
+            const amount = parseFloat(t.amount);
+            if (t.type === 'income') {
+                groupedData.get(key).income += amount;
+            } else {
+                groupedData.get(key).expenses += amount;
+            }
         });
 
-        return {
-            labels: sortedMonths.map(month => formatDate(month, 'MMM YYYY')),
-            rates
-        };
+        return groupedData;
     }
 
-    /**
-     * Generate colors for chart segments
-     * @param {number} count - Number of colors needed
-     * @returns {Array} Array of color strings
-     */
-    generateColors(count) {
-        const baseColors = [
-            '#2ecc71', '#e74c3c', '#3498db', '#f1c40f', '#9b59b6',
-            '#1abc9c', '#e67e22', '#34495e', '#16a085', '#c0392b'
-        ];
-
-        if (count <= baseColors.length) {
-            return baseColors.slice(0, count);
-        }
-
-        // Generate additional colors if needed
-        const colors = [...baseColors];
-        while (colors.length < count) {
-            const hue = (colors.length * 137.508) % 360;
-            colors.push(`hsl(${hue}, 70%, 50%)`);
-        }
-        return colors;
+    formatDates(dates, period) {
+        return dates.map(date => {
+            const [year, month, day] = date.split('-');
+            switch (period) {
+                case 'week':
+                    return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                case 'month':
+                    return new Date(year, month - 1).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                case 'year':
+                    return new Date(year, month - 1).toLocaleDateString('en-US', { month: 'short' });
+            }
+        });
     }
 
-    /**
-     * Create a new chart or update existing one
-     * @param {string} canvasId - Canvas element ID
-     * @param {Object} config - Chart configuration
-     */
-    createOrUpdateChart(canvasId, config) {
-        if (this.charts.has(canvasId)) {
+    async exportChartAsPDF(canvasId, title) {
+        try {
+            await this.ensureInitialized();
+
             const chart = this.charts.get(canvasId);
-            chart.data = config.data;
-            chart.options = config.options;
-            chart.update('none');
-        } else {
-            const chart = new Chart(document.getElementById(canvasId), config);
-            this.charts.set(canvasId, chart);
-        }
-    }
+            if (!chart) {
+                throw new Error('Chart not found');
+            }
 
-    /**
-     * Destroy all charts
-     */
-    destroyAllCharts() {
-        this.charts.forEach(chart => chart.destroy());
-        this.charts.clear();
+            // Initialize jsPDF
+            if (!window.jspdf?.jsPDF) {
+                throw new Error('PDF library not available. Please ensure jsPDF is properly loaded.');
+            }
+
+            const canvas = chart.canvas;
+            const imageData = canvas.toDataURL('image/png');
+
+            // Initialize jsPDF
+            const pdf = new window.jspdf.jsPDF();
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const pageHeight = pdf.internal.pageSize.getHeight();
+
+            // Add title
+            pdf.setFontSize(16);
+            pdf.text(title, 20, 20);
+
+            // Calculate image dimensions to fit page width while maintaining aspect ratio
+            const imgWidth = pageWidth - 40;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+            // Add image
+            pdf.addImage(imageData, 'PNG', 20, 30, imgWidth, imgHeight);
+
+            // Add chart data summary
+            pdf.setFontSize(12);
+            pdf.setTextColor(100);
+            let y = 40 + imgHeight;
+
+            if (canvasId === 'category-chart') {
+                const data = chart.data.datasets[0].data;
+                const labels = chart.data.labels;
+                const total = data.reduce((a, b) => a + b, 0);
+
+                pdf.text('Category Breakdown:', 20, y);
+                y += 10;
+
+                labels.forEach((label, i) => {
+                    const percentage = ((data[i] / total) * 100).toFixed(1);
+                    pdf.text(`${label}: ${percentage}%`, 30, y);
+                    y += 7;
+                });
+            } else if (canvasId === 'trend-chart') {
+                const datasets = chart.data.datasets;
+                const labels = chart.data.labels;
+                
+                pdf.text('Period Summary:', 20, y);
+                y += 10;
+
+                datasets.forEach(dataset => {
+                    const total = dataset.data.reduce((a, b) => a + b, 0);
+                    const avg = total / dataset.data.length;
+                    pdf.text(`Average ${dataset.label}: ${formatCurrency(avg)}`, 30, y);
+                    y += 7;
+                });
+            }
+
+            // Add timestamp
+            pdf.setFontSize(10);
+            pdf.setTextColor(128);
+            const timestamp = new Date().toLocaleString();
+            pdf.text(`Generated on ${timestamp}`, 20, pageHeight - 20);
+
+            // Save the PDF
+            pdf.save(`${title.toLowerCase().replace(/\s+/g, '-')}.pdf`);
+        } catch (error) {
+            console.error('PDF export error:', error);
+            throw error;
+        }
     }
 }
 
-export const chartManager = new ChartManager();
+// Create and export chart manager instance
+const chartManager = new ChartManager();
+
+// Make chart manager globally available
+window.chartManager = chartManager;
+
+export { chartManager };

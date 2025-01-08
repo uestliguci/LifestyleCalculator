@@ -1,184 +1,146 @@
-export class PDFExportService {
-    constructor() {
-        this.jsPDF = window.jspdf.jsPDF;
-    }
+import { postgresStorage } from './postgres-storage.js';
 
-    async generateBankStatement(transactions) {
-        try {
-            const doc = new this.jsPDF();
-            
-            // Add header
-            this.addHeader(doc);
-            
-            // Add statement summary
-            this.addSummary(doc, transactions);
-            
-            // Add transactions table
-            this.addTransactionsTable(doc, transactions);
-            
-            // Add footer
-            this.addFooter(doc);
-            
-            // Save the PDF
-            doc.save('bank-statement.pdf');
-        } catch (error) {
-            console.error('Error generating PDF:', error);
-            throw error;
+export async function exportToPDF() {
+    // Create a temporary div to render the statement
+    const container = document.createElement('div');
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
+    container.style.width = '800px';
+    container.style.background = 'white';
+    container.style.padding = '20px';
+    document.body.appendChild(container);
+
+    try {
+        const transactions = await postgresStorage.getAllTransactions();
+        if (!transactions || transactions.length === 0) {
+            alert('No transactions available for export');
+            return;
         }
-    }
 
-    addHeader(doc) {
-        // Add iOS-style header with logo
-        doc.setFillColor(0, 122, 255); // iOS blue
-        doc.rect(0, 0, doc.internal.pageSize.width, 60, 'F');
+        // Sort transactions by date
+        transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        // Get statement period
+        const startDate = new Date(transactions[0].date);
+        const endDate = new Date(transactions[transactions.length - 1].date);
         
-        // Add white text
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(24);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Lifestyle Calculator', 20, 30);
+        // Format amounts with Lek currency
+        const formatAmount = (amount) => `${amount.toFixed(2)} Lek`;
 
-        // Add statement details
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
-        const currentDate = new Date().toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        });
-        doc.text('Statement Date: ' + currentDate, 20, 45);
-        
-        // Reset text color for rest of document
-        doc.setTextColor(0, 0, 0);
-    }
-
-    addSummary(doc, transactions) {
-        let totalIncome = 0;
-        let totalExpenses = 0;
-
-        transactions.forEach(transaction => {
-            if (transaction.type.toLowerCase() === 'income') {
-                totalIncome += parseFloat(transaction.amount);
+        // Calculate totals
+        const totals = transactions.reduce((acc, t) => {
+            const amount = parseFloat(t.amount);
+            if (t.type.toLowerCase() === 'income') {
+                acc.totalCredits += amount;
             } else {
-                totalExpenses += parseFloat(transaction.amount);
+                acc.totalDebits += amount;
             }
+            return acc;
+        }, { totalCredits: 0, totalDebits: 0 });
+
+        // Generate statement HTML
+        container.innerHTML = `
+            <div style="font-family: Arial, sans-serif; color: #000;">
+                <div style="background: #002B7F; color: white; padding: 40px; margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="font-size: 36px; font-weight: bold;">LIFESTYLE BANK</div>
+                    <div style="font-size: 28px;">Account Statement</div>
+                </div>
+
+                <div style="margin-bottom: 40px;">
+                    <div style="display: flex; justify-content: space-between; line-height: 2;">
+                        <span>Bank Information:</span>
+                        <span>Statement Period:</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; line-height: 2;">
+                        <span>Lifestyle Bank</span>
+                        <span>${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; line-height: 2;">
+                        <span>Branch: Main Office</span>
+                        <span>Statement Number:</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; line-height: 2;">
+                        <span>SWIFT: LIFEAL22</span>
+                        <span>${Math.floor(Math.random() * 900000) + 100000}</span>
+                    </div>
+                </div>
+
+                <div style="background: #f0f0f0; padding: 15px; margin-bottom: 40px;">
+                    <div style="display: flex; justify-content: space-between;">
+                        <div>
+                            <strong>Opening Balance</strong><br>
+                            ${formatAmount(0)}
+                        </div>
+                        <div>
+                            <strong>Total Credits</strong><br>
+                            ${formatAmount(totals.totalCredits)}
+                        </div>
+                        <div>
+                            <strong>Total Debits</strong><br>
+                            ${formatAmount(totals.totalDebits)}
+                        </div>
+                        <div>
+                            <strong>Closing Balance</strong><br>
+                            ${formatAmount(totals.totalCredits - totals.totalDebits)}
+                        </div>
+                    </div>
+                </div>
+
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px;">
+                    <thead>
+                        <tr style="background: #002B7F; color: white;">
+                            <th style="padding: 10px; text-align: left; font-weight: normal; width: 15%;">Date</th>
+                            <th style="padding: 10px; text-align: left; font-weight: normal; width: 15%;">Type</th>
+                            <th style="padding: 10px; text-align: left; font-weight: normal; width: 20%;">Category</th>
+                            <th style="padding: 10px; text-align: right; font-weight: normal; width: 15%;">Amount</th>
+                            <th style="padding: 10px; text-align: left; font-weight: normal; width: 35%;">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${transactions.map((t, i) => `
+                            <tr style="background: ${i % 2 === 0 ? '#fff' : '#f9f9f9'};">
+                                <td style="padding: 10px; border-bottom: 1px solid #ddd;">${new Date(t.date).toLocaleDateString()}</td>
+                                <td style="padding: 10px; border-bottom: 1px solid #ddd;">${t.type}</td>
+                                <td style="padding: 10px; border-bottom: 1px solid #ddd;">${t.category}</td>
+                                <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">${formatAmount(parseFloat(t.amount))}</td>
+                                <td style="padding: 10px; border-bottom: 1px solid #ddd;">${t.description || ''}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+
+                <div style="color: #666; font-size: 12px; font-style: italic; border-top: 1px solid #ddd; padding-top: 20px;">
+                    <p>This is an official bank statement from Lifestyle Bank. All amounts are in Albanian Lek (ALL).</p>
+                    <p>For any discrepancies, please contact your branch within 15 days of statement generation.</p>
+                    <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                        <span>Page 1 of 1</span>
+                        <span>Generated: ${new Date().toLocaleString()}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Convert to canvas
+        const canvas = await html2canvas(container, {
+            scale: 2,
+            logging: false,
+            useCORS: true,
+            backgroundColor: '#ffffff'
         });
 
-        const balance = totalIncome - totalExpenses;
+        // Convert canvas to PNG and force download
+        const dataUrl = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = `bank-statement-${new Date().toISOString().split('T')[0]}.png`;
+        link.href = dataUrl;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
-        // Add summary cards in iOS style
-        const startY = 80;
-        const cardWidth = 50;
-        const margin = 20;
-
-        // Income Card
-        doc.setFillColor(52, 199, 89); // iOS green
-        doc.roundedRect(margin, startY, cardWidth, 40, 5, 5, 'F');
-        doc.setTextColor(255, 255, 255);
-        doc.setFontSize(10);
-        doc.text('Income', margin + 5, startY + 15);
-        doc.setFontSize(12);
-        doc.text(totalIncome.toFixed(2), margin + 5, startY + 30);
-
-        // Expenses Card
-        doc.setFillColor(255, 59, 48); // iOS red
-        doc.roundedRect(margin + cardWidth + 10, startY, cardWidth, 40, 5, 5, 'F');
-        doc.text('Expenses', margin + cardWidth + 15, startY + 15);
-        doc.text(totalExpenses.toFixed(2), margin + cardWidth + 15, startY + 30);
-
-        // Balance Card
-        doc.setFillColor(0, 122, 255); // iOS blue
-        doc.roundedRect(margin + (cardWidth + 10) * 2, startY, cardWidth, 40, 5, 5, 'F');
-        doc.text('Balance', margin + (cardWidth + 10) * 2 + 5, startY + 15);
-        doc.text(balance.toFixed(2), margin + (cardWidth + 10) * 2 + 5, startY + 30);
-
-        // Reset text color
-        doc.setTextColor(0, 0, 0);
-    }
-
-    addTransactionsTable(doc, transactions) {
-        // Prepare table data
-        const tableData = transactions.map(t => [
-            new Date(t.date).toLocaleDateString(),
-            t.type,
-            t.category,
-            t.amount.toFixed(2),
-            t.description
-        ]);
-
-        // Define table headers
-        const headers = [
-            ['Date', 'Type', 'Category', 'Amount', 'Description']
-        ];
-
-        // Add table using autoTable plugin with iOS styling
-        doc.autoTable({
-            startY: 140,
-            head: headers,
-            body: tableData,
-            theme: 'plain',
-            styles: {
-                fontSize: 10,
-                cellPadding: 8,
-                overflow: 'linebreak',
-                halign: 'left',
-                font: 'helvetica'
-            },
-            headStyles: {
-                fillColor: [247, 247, 247], // iOS light gray
-                textColor: [142, 142, 147], // iOS secondary text
-                fontSize: 10,
-                fontStyle: 'bold'
-            },
-            columnStyles: {
-                0: { cellWidth: 30 },
-                1: { cellWidth: 25 },
-                2: { cellWidth: 35 },
-                3: { cellWidth: 25, halign: 'right' },
-                4: { cellWidth: 'auto' }
-            },
-            didParseCell: function(data) {
-                // Add iOS-style cell styling
-                if (data.row.index === -1) return; // Skip header
-                
-                const type = tableData[data.row.index][1];
-                if (data.column.index === 3) { // Amount column
-                    data.cell.styles.textColor = type.toLowerCase() === 'income' ? 
-                        [52, 199, 89] : // iOS green
-                        [255, 59, 48];  // iOS red
-                }
-            },
-            didDrawCell: function(data) {
-                // Add subtle border
-                if (data.row.index === -1) return; // Skip header
-                
-                const x = data.cell.x;
-                const y = data.cell.y;
-                const w = data.cell.width;
-                const h = data.cell.height;
-                
-                doc.setDrawColor(229, 229, 234); // iOS separator color
-                doc.setLineWidth(0.1);
-                doc.line(x, y + h, x + w, y + h);
-            }
-        });
-    }
-
-    addFooter(doc) {
-        const pageCount = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= pageCount; i++) {
-            doc.setPage(i);
-            
-            // Add page number
-            doc.setFontSize(10);
-            doc.text('Page ' + i + ' of ' + pageCount, 20, doc.internal.pageSize.height - 10);
-            
-            // Add timestamp
-            const timestamp = new Date().toLocaleString();
-            doc.text('Generated on: ' + timestamp, 100, doc.internal.pageSize.height - 10);
-        }
+        // Cleanup
+        document.body.removeChild(container);
+    } catch (error) {
+        console.error('Failed to generate statement:', error);
+        alert('Failed to generate bank statement. Please try again.');
     }
 }
-
-// Initialize and export instance
-export const pdfExport = new PDFExportService();

@@ -10,7 +10,9 @@
   },
   "dependencies": {
     "chart.js": "^4.4.0",
-    "http-server": "^14.1.1"
+    "http-server": "^14.1.1",
+    "jspdf": "^2.5.2",
+    "jspdf-autotable": "^3.8.4"
   },
   "devDependencies": {
     "concurrently": "^8.2.1"

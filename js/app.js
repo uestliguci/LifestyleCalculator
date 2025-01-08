@@ -130,8 +130,8 @@ class App {
         
         const formattedAmount = parseFloat(amount).toFixed(2);
         return currency.position === 'before' 
-            ? `${currency.symbol}${formattedAmount}`
-            : `${formattedAmount}${currency.symbol}`;
+            ? `${currency.symbol} ${formattedAmount}`
+            : `${formattedAmount} ${currency.symbol}`;
     }
 
     /**
@@ -147,7 +147,7 @@ class App {
                     const amountLabel = document.querySelector('label[for="amount"]');
                     const currency = CURRENCIES[select.value];
                     if (amountLabel && currency) {
-                        amountLabel.textContent = `Amount (${currency.symbol})`;
+                        amountLabel.textContent = `Amount (${currency.symbol} - Albanian Lek)`;
                     }
                 }
                 ui.refreshCurrentSection();
@@ -193,10 +193,16 @@ class App {
     updateTransactionForm() {
         const typeSelect = document.getElementById('transaction-type');
         const categorySelect = document.getElementById('category');
+        const amountLabel = document.querySelector('label[for="amount"]');
         
         if (typeSelect && categorySelect) {
             const type = typeSelect.value.toLowerCase();
             categorySelect.innerHTML = this.getCategoryOptions(type);
+        }
+
+        // Update amount label with Albanian Lek
+        if (amountLabel) {
+            amountLabel.textContent = 'Amount (Lek - Albanian Lek)';
         }
     }
 
