@@ -1,5 +1,5 @@
 import { ANIMATION_DURATION, BUDGET_ALERTS, CATEGORIES } from './config.js';
-import { postgresStorage } from './services/postgres-storage.js';
+import { storageManager } from './services/storage-manager.js';
 import { formatCurrency, formatDate, debounce, detectAnomalies } from './utils.js';
 import { chartManager } from './charts.js';
 import { exportToPDF } from './services/pdf-export.js';
@@ -53,10 +53,10 @@ class UIManager {
 
     async initializeDB() {
         try {
-            await postgresStorage.init();
-            console.log('PostgreSQL initialized successfully');
+            await storageManager.initializeStorage();
+            console.log('Storage system initialized successfully');
         } catch (error) {
-            console.error('Failed to initialize PostgreSQL:', error);
+            console.error('Failed to initialize storage:', error);
             this.showAlert('Failed to initialize storage. Some features may not work.', 'error');
         }
     }
@@ -145,7 +145,7 @@ class UIManager {
         monthStart.setDate(1);
         monthStart.setHours(0, 0, 0, 0);
 
-        const transactions = await postgresStorage.getTransactions();
+        const transactions = await storageManager.getTransactions();
         const monthlyTransactions = transactions.filter(t => 
             new Date(t.date) >= monthStart && t.type === 'expense'
         );
@@ -334,12 +334,11 @@ class UIManager {
                 description: form.querySelector('#description').value || '',
                 date: formattedDate,
                 timestamp: formattedDate,
-                id: transactionId,
-                userId: 'default'
+                id: transactionId
             };
 
             console.log('Submitting transaction:', transaction);
-            const result = await postgresStorage.addTransaction(transaction);
+            const result = await storageManager.addTransaction(transaction);
             
             if (result.success) {
                 this.showAlert('Transaction added successfully', 'success');
@@ -366,7 +365,7 @@ class UIManager {
      * Filter transactions based on search input
      */
     async filterTransactions(query) {
-        const transactions = await postgresStorage.getTransactions();
+        const transactions = await storageManager.getTransactions();
         const filtered = transactions.filter(t => 
             Object.values(t).some(value => 
                 String(value).toLowerCase().includes(query.toLowerCase())
@@ -379,7 +378,7 @@ class UIManager {
      * Update monthly analytics charts and summaries
      */
     async updateAnalytics(period = 'week') {
-        const transactions = await postgresStorage.getTransactions();
+        const transactions = await storageManager.getTransactions();
         const now = new Date();
         let startDate;
 
@@ -549,7 +548,7 @@ class UIManager {
      * Update spending visualization charts
      */
     async updateVisualization(viewType = 'daily') {
-        const transactions = await postgresStorage.getTransactions();
+        const transactions = await storageManager.getTransactions();
         try {
             const chartManager = await this.getChartManager();
             await chartManager.updateTrendChart('spending-chart', transactions, viewType);
@@ -563,7 +562,7 @@ class UIManager {
      * Update balance indicator with current total
      */
     async updateBalanceIndicator() {
-        const transactions = await postgresStorage.getTransactions();
+        const transactions = await storageManager.getTransactions();
         const balance = transactions.reduce((total, t) => 
             total + (t.type.toLowerCase() === 'income' ? 1 : -1) * parseFloat(t.amount)
         , 0);
@@ -579,7 +578,7 @@ class UIManager {
      * Update balance sheet charts
      */
     async updateBalanceSheet(year = new Date().getFullYear().toString()) {
-        const transactions = (await postgresStorage.getTransactions()).filter(t => 
+        const transactions = (await storageManager.getTransactions()).filter(t => 
             t.date.startsWith(year)
         );
 
@@ -675,7 +674,7 @@ class UIManager {
         if (!transactionsList) return;
 
         if (!transactions) {
-            transactions = await postgresStorage.getTransactions();
+            transactions = await storageManager.getTransactions();
         }
 
         const groupedTransactions = transactions.reduce((groups, t) => {

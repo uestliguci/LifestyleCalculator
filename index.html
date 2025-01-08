@@ -257,11 +257,16 @@
         await Promise.all([
             import('./js/config.js'),
             import('./js/utils.js'),
-            import('./js/services/postgres-storage.js'),
+            import('./js/services/storage-manager.js'),
+            import('./js/services/auth.js'),
             import('./js/services/balance-manager.js'),
             import('./js/ui.js'),
             import('./js/app.js')
         ]);
+
+        // Initialize auth service
+        const { authService } = await import('./js/services/auth.js');
+        window.logout = () => authService.logout();
 
         // Register service worker
         if ('serviceWorker' in navigator) {
