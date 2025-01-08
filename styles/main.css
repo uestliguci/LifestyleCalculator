@@ -8,6 +8,7 @@
     --text-primary: #000000;
     --text-secondary: #8E8E93;
     --background-color: #F2F2F7;
+    --background-color-rgb: 242, 242, 247;
     --surface-color: #FFFFFF;
     --border-color: #E5E5EA;
     --success-bg: #E4FFF0;
@@ -17,6 +18,7 @@
     /* Dark mode colors */
     --surface-color-dark: #1C1C1E;
     --background-color-dark: #000000;
+    --background-color-dark-rgb: 0, 0, 0;
     --text-primary-dark: #FFFFFF;
     --text-secondary-dark: #98989D;
     --border-color-dark: #38383A;
@@ -36,6 +38,7 @@
     padding: 0;
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
 }
 
 body {
@@ -55,47 +58,6 @@ body {
     margin: 0 auto;
 }
 
-/* Balance Card */
-.balance-card {
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-color-light));
-    border-radius: 20px;
-    padding: 24px;
-    color: white;
-    margin-bottom: 24px;
-    box-shadow: var(--shadow-md);
-}
-
-.balance-header {
-    text-align: center;
-}
-
-.balance-header h2 {
-    font-size: 18px;
-    font-weight: 500;
-    margin-bottom: 12px;
-    opacity: 0.9;
-}
-
-.balance-amount {
-    display: block;
-    font-size: 36px;
-    font-weight: 600;
-    margin-bottom: 8px;
-}
-
-.balance-trend {
-    font-size: 14px;
-    opacity: 0.8;
-}
-
-/* Transactions Container */
-.transactions-container {
-    background: var(--surface-color);
-    border-radius: 20px;
-    padding: 20px;
-    box-shadow: var(--shadow-sm);
-}
-
 /* iOS Header */
 .ios-header {
     position: sticky;
@@ -104,6 +66,15 @@ body {
     background: var(--background-color);
     padding: 16px 16px 0;
     margin: -16px -16px 0;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-color);
+}
+
+@supports (backdrop-filter: blur(10px)) {
+    .ios-header {
+        background: rgba(var(--background-color-rgb), 0.8);
+    }
 }
 
 .header-top {
@@ -114,9 +85,10 @@ body {
 }
 
 .header-top h1 {
-    font-size: 32px;
+    font-size: 34px;
     font-weight: 700;
     color: var(--text-primary);
+    letter-spacing: -0.5px;
 }
 
 .header-actions {
@@ -137,10 +109,12 @@ body {
     box-shadow: var(--shadow-sm);
     cursor: pointer;
     transition: all 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .action-button:active {
-    transform: scale(0.95);
+    transform: scale(0.92);
+    background: var(--background-color);
 }
 
 .action-button.primary {
@@ -148,9 +122,58 @@ body {
     color: white;
 }
 
+.action-button.primary:active {
+    background: var(--primary-color-light);
+}
+
+/* Balance Card */
+.balance-card {
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-color-light));
+    border-radius: 24px;
+    padding: 24px;
+    color: white;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow-md);
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    transition: transform 0.3s ease;
+}
+
+.balance-card:active {
+    transform: scale(0.98) translateZ(0);
+}
+
+.balance-header {
+    text-align: center;
+}
+
+.balance-header h2 {
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    opacity: 0.9;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.balance-amount {
+    display: block;
+    font-size: 42px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    letter-spacing: -0.5px;
+}
+
+.balance-trend {
+    font-size: 15px;
+    opacity: 0.9;
+    font-weight: 500;
+}
+
 /* iOS Search Bar */
 .ios-searchbar {
     margin: 16px 0;
+    padding: 0 4px;
 }
 
 .search-wrapper {
@@ -165,16 +188,18 @@ body {
     height: 36px;
     padding: 0 36px;
     border: none;
-    border-radius: 10px;
+    border-radius: 12px;
     background: var(--surface-color);
     font-size: 17px;
     color: var(--text-primary);
     box-shadow: var(--shadow-sm);
+    transition: all 0.2s ease;
 }
 
 .search-input:focus {
     outline: none;
     background: var(--surface-color);
+    box-shadow: var(--shadow-md);
 }
 
 .search-input::placeholder {
@@ -196,43 +221,39 @@ body {
     background: none;
     color: var(--primary-color);
     font-size: 17px;
+    font-weight: 500;
     padding: 0;
     cursor: pointer;
+    transition: opacity 0.2s ease;
 }
 
-.search-input:focus + .search-cancel {
+.search-cancel:active {
+    opacity: 0.7;
+}
+
+.search-input:focus ~ .search-cancel {
     display: block;
 }
 
-/* Dark mode adjustments */
-@media (prefers-color-scheme: dark) {
-    .ios-header {
-        background: var(--background-color-dark);
-    }
-
-    .action-button {
-        background: var(--surface-color-dark);
-    }
-
-    .search-input {
-        background: var(--surface-color-dark);
-    }
-
-    .search-input:focus {
-        background: var(--surface-color-dark);
-    }
+/* Transactions Container */
+.transactions-container {
+    background: var(--surface-color);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
 }
 
 .swipe-hint {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 12px;
+    padding: 12px 16px;
     background: var(--background-color);
     border-radius: 12px;
-    margin-bottom: 16px;
+    margin-bottom: 20px;
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: 15px;
+    font-weight: 500;
 }
 
 /* Transaction Groups */
@@ -249,14 +270,14 @@ body {
 }
 
 .date-label {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
     color: var(--text-secondary);
 }
 
 .date-total {
-    font-size: 14px;
-    font-weight: 500;
+    font-size: 15px;
+    font-weight: 600;
     color: var(--text-primary);
 }
 
@@ -267,6 +288,7 @@ body {
     overflow: hidden;
     box-shadow: var(--shadow-sm);
     margin-bottom: 24px;
+    border: 1px solid var(--border-color);
 }
 
 .table-header {
@@ -288,14 +310,14 @@ body {
     padding: 16px;
     align-items: center;
     border-bottom: 1px solid var(--border-color);
-    transition: background-color 0.2s ease;
+    transition: all 0.2s ease;
 }
 
 .table-row:last-child {
     border-bottom: none;
 }
 
-.table-row:hover {
+.table-row:active {
     background-color: var(--background-color);
 }
 
@@ -309,10 +331,15 @@ body {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 8px;
+    padding: 6px 10px;
     border-radius: 8px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
+    transition: transform 0.2s ease;
+}
+
+.type-badge:active {
+    transform: scale(0.95);
 }
 
 .type-badge.income {
@@ -328,15 +355,20 @@ body {
 .category-tag {
     background: var(--primary-color-light);
     color: white;
-    padding: 4px 12px;
+    padding: 6px 12px;
     border-radius: 12px;
     font-size: 13px;
-    font-weight: 500;
+    font-weight: 600;
+    transition: transform 0.2s ease;
+}
+
+.category-tag:active {
+    transform: scale(0.95);
 }
 
 .description-text {
     color: var(--text-secondary);
-    font-size: 14px;
+    font-size: 15px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -344,16 +376,22 @@ body {
 
 .col-time {
     color: var(--text-secondary);
-    font-size: 13px;
+    font-size: 14px;
+    font-weight: 500;
 }
 
 .amount-tag {
     font-weight: 600;
-    padding: 4px 12px;
+    padding: 6px 12px;
     border-radius: 8px;
-    font-size: 14px;
+    font-size: 15px;
     min-width: 100px;
     text-align: right;
+    transition: transform 0.2s ease;
+}
+
+.amount-tag:active {
+    transform: scale(0.95);
 }
 
 .amount-tag.income {
@@ -370,11 +408,58 @@ body {
     justify-content: flex-end;
 }
 
-/* Responsive Table */
+/* Action Buttons */
+.btn-edit, .btn-delete {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-edit {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-delete {
+    background: var(--danger-color);
+    color: white;
+}
+
+.btn-edit:active, .btn-delete:active {
+    transform: scale(0.92);
+    opacity: 0.9;
+}
+
+/* Responsive Design */
 @media (max-width: 768px) {
+    .ios-header {
+        padding: 12px 12px 0;
+    }
+
+    .header-top h1 {
+        font-size: 28px;
+    }
+
+    .balance-card {
+        border-radius: 20px;
+        padding: 20px;
+    }
+
+    .balance-amount {
+        font-size: 36px;
+    }
+
     .transaction-table {
-        border-radius: 12px;
         margin: 0 -16px;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
     }
 
     .table-header {
@@ -385,7 +470,7 @@ body {
         display: flex;
         flex-direction: column;
         padding: 16px;
-        gap: 8px;
+        gap: 12px;
     }
 
     .col-type, .col-category, .col-description, .col-time, .col-amount {
@@ -418,271 +503,59 @@ body {
     }
 
     .amount-tag {
-        font-size: 16px;
-    }
-}
-
-.transaction-icon {
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.transaction-icon.income {
-    background: var(--success-bg);
-    color: var(--success-color);
-}
-
-.transaction-icon.expense {
-    background: var(--danger-bg);
-    color: var(--danger-color);
-}
-
-.transaction-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.transaction-primary {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 4px;
-}
-
-.transaction-category {
-    font-weight: 600;
-    font-size: 16px;
-    color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.transaction-amount {
-    font-weight: 600;
-    font-size: 16px;
-    padding: 4px 12px;
-    border-radius: 8px;
-    min-width: 100px;
-    text-align: right;
-}
-
-.transaction-secondary {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 14px;
-    color: var(--text-secondary);
-}
-
-.transaction-description {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 200px;
-}
-
-.transaction-time {
-    font-size: 13px;
-}
-
-.transaction-actions {
-    display: flex;
-    gap: 12px;
-    padding: 8px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-}
-
-.transaction-item.swiped .transaction-actions {
-    opacity: 1;
-}
-
-.btn-edit, .btn-delete {
-    width: 40px;
-    height: 40px;
-    border: none;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.btn-edit {
-    background: var(--primary-color-light);
-    color: white;
-}
-
-.btn-delete {
-    background: var(--danger-color);
-    color: white;
-}
-
-.btn-edit:hover, .btn-delete:hover {
-    opacity: 0.9;
-}
-
-.transaction-details.ios-style {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px;
-    background: var(--surface-color);
-    border-radius: 12px;
-    margin: 8px 0;
-    box-shadow: var(--shadow-sm);
-}
-
-.transaction-details.ios-style .detail-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border-color);
-}
-
-.transaction-details.ios-style .detail-row:last-child {
-    border-bottom: none;
-}
-
-.transaction-details.ios-style .label {
-    color: var(--text-secondary);
-    font-size: 14px;
-    font-weight: 500;
-}
-
-.transaction-details.ios-style .value {
-    font-size: 15px;
-    font-weight: 400;
-}
-
-.transaction-details.ios-style .value.category-tag {
-    background: var(--primary-color-light);
-    color: white;
-    padding: 4px 12px;
-    border-radius: 16px;
-    font-size: 13px;
-}
-
-.transaction-details.ios-style .value.amount-tag {
-    font-weight: 600;
-    padding: 4px 12px;
-    border-radius: 8px;
-}
-
-.transaction-details.ios-style .value.amount-tag.income {
-    background: var(--success-bg);
-    color: var(--success-color);
-}
-
-.transaction-details.ios-style .value.amount-tag.expense {
-    background: var(--danger-bg);
-    color: var(--danger-color);
-}
-
-.transaction-details.ios-style .value.monospace {
-    font-family: "SF Mono", SFMono-Regular, ui-monospace, monospace;
-    font-size: 12px;
-    color: var(--text-secondary);
-}
-
-/* iPhone Pro Max Optimizations */
-@media only screen 
-and (device-width: 430px) 
-and (device-height: 932px),
-(device-width: 428px) 
-and (device-height: 926px) {
-    .transaction-item {
-        padding: 20px;
-        margin-bottom: 12px;
-    }
-
-    .transaction-title {
-        font-size: 18px;
-    }
-
-    .transaction-amount {
-        font-size: 18px;
-        min-width: 120px;
-    }
-
-    .transaction-details.ios-style {
-        padding: 20px;
-    }
-
-    .transaction-details.ios-style .label {
-        font-size: 16px;
-    }
-
-    .transaction-details.ios-style .value {
         font-size: 17px;
     }
-}
 
-.transaction-type {
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-weight: 500;
-    font-size: 12px;
-    text-transform: capitalize;
-}
-
-.transaction-type.income {
-    background: var(--success-bg);
-    color: var(--success-color);
-}
-
-.transaction-type.expense {
-    background: var(--danger-bg);
-    color: var(--danger-color);
-}
-
-.transaction-description {
-    color: var(--text-secondary);
-}
-
-.transaction-amount {
-    font-weight: 600;
-    font-size: 16px;
-    padding: 8px 12px;
-    border-radius: 8px;
-    min-width: 100px;
-    text-align: right;
-}
-
-.transaction-amount.income {
-    color: var(--success-color);
-    background: var(--success-bg);
-}
-
-.transaction-amount.expense {
-    color: var(--danger-color);
-    background: var(--danger-bg);
+    .description-text {
+        font-size: 16px;
+    }
 }
 
 /* Dark Mode Support */
 @media (prefers-color-scheme: dark) {
-    body {
-        background-color: var(--background-color-dark);
-        color: var(--text-primary-dark);
+    .ios-header {
+        background: rgba(var(--background-color-dark-rgb), 0.8);
+        border-bottom-color: var(--border-color-dark);
     }
 
-    .transaction-item {
+    .transaction-table {
+        border-color: var(--border-color-dark);
+    }
+
+    .table-row {
+        border-bottom-color: var(--border-color-dark);
+    }
+
+    .action-button {
         background: var(--surface-color-dark);
     }
 
-    .transaction-title {
-        color: var(--text-primary-dark);
+    .action-button:active {
+        background: var(--background-color-dark);
     }
 
-    .transaction-description {
-        color: var(--text-secondary-dark);
+    .search-input {
+        background: var(--surface-color-dark);
+    }
+
+    .search-input:focus {
+        background: var(--surface-color-dark);
+    }
+
+    .transactions-container {
+        background: var(--surface-color-dark);
+    }
+
+    .transaction-table {
+        background: var(--surface-color-dark);
+    }
+
+    .table-header {
+        background: var(--background-color-dark);
+    }
+
+    .table-row:active {
+        background: var(--background-color-dark);
     }
 }
 
@@ -694,11 +567,11 @@ and (device-height: 926px) {
     transform: translateX(-50%) translateY(-100%);
     background: var(--surface-color);
     padding: 12px 24px;
-    border-radius: 12px;
-    box-shadow: var(--shadow-md);
+    border-radius: 16px;
+    box-shadow: var(--shadow-lg);
     z-index: 1000;
     opacity: 0;
-    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .alert.show {
@@ -719,36 +592,46 @@ and (device-height: 926px) {
 /* Settings Section */
 .settings-list {
     padding: 16px;
+    max-width: 800px;
+    margin: 0 auto;
 }
 
 .settings-item {
     background: var(--surface-color);
-    padding: 16px;
-    border-radius: 12px;
-    margin-bottom: 12px;
+    padding: 20px;
+    border-radius: 16px;
+    margin-bottom: 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease;
+}
+
+.settings-item:active {
+    transform: scale(0.98);
 }
 
 .settings-info h4 {
-    font-size: 16px;
+    font-size: 17px;
     margin-bottom: 4px;
     color: var(--text-primary);
+    font-weight: 600;
 }
 
 .settings-info p {
-    font-size: 14px;
+    font-size: 15px;
     color: var(--text-secondary);
 }
 
 .btn-primary, .btn-secondary {
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-weight: 500;
-    font-size: 14px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 15px;
     border: none;
     cursor: pointer;
+    transition: all 0.2s ease;
 }
 
 .btn-primary {
@@ -759,4 +642,9 @@ and (device-height: 926px) {
 .btn-secondary {
     background: var(--danger-bg);
     color: var(--danger-color);
+}
+
+.btn-primary:active, .btn-secondary:active {
+    transform: scale(0.95);
+    opacity: 0.9;
 }
