@@ -7,16 +7,34 @@ import { validateTransaction } from '../utils.js';
  */
 class StorageManager {
     constructor() {
+        this.currentUser = null;
         this.initializeStorage();
     }
 
-    initializeStorage() {
-        // Initialize storage with default values if empty
-        if (!localStorage.getItem(STORAGE_KEYS.transactions)) {
-            localStorage.setItem(STORAGE_KEYS.transactions, JSON.stringify([]));
+    setCurrentUser(user) {
+        this.currentUser = user;
+        this.initializeStorage();
+    }
+
+    getUserKey(key) {
+        if (!this.currentUser) {
+            throw new Error('No user logged in');
         }
-        if (!localStorage.getItem(STORAGE_KEYS.settings)) {
-            localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify({
+        return `${this.currentUser.username}_${key}`;
+    }
+
+    initializeStorage() {
+        if (!this.currentUser) return;
+
+        // Initialize storage with default values if empty
+        const transactionsKey = this.getUserKey(STORAGE_KEYS.transactions);
+        const settingsKey = this.getUserKey(STORAGE_KEYS.settings);
+
+        if (!localStorage.getItem(transactionsKey)) {
+            localStorage.setItem(transactionsKey, JSON.stringify([]));
+        }
+        if (!localStorage.getItem(settingsKey)) {
+            localStorage.setItem(settingsKey, JSON.stringify({
                 monthlyBudget: 0,
                 theme: 'light',
                 currency: 'ALL',
@@ -27,7 +45,11 @@ class StorageManager {
 
     async getTransactions() {
         try {
-            return JSON.parse(localStorage.getItem(STORAGE_KEYS.transactions)) || [];
+            if (!this.currentUser) {
+                return [];
+            }
+            const transactionsKey = this.getUserKey(STORAGE_KEYS.transactions);
+            return JSON.parse(localStorage.getItem(transactionsKey)) || [];
         } catch (error) {
             console.error('Error reading transactions:', error);
             return [];
@@ -53,7 +75,8 @@ class StorageManager {
             };
 
             transactions.push(newTransaction);
-            localStorage.setItem(STORAGE_KEYS.transactions, JSON.stringify(transactions));
+            const transactionsKey = this.getUserKey(STORAGE_KEYS.transactions);
+            localStorage.setItem(transactionsKey, JSON.stringify(transactions));
 
             return {
                 success: true,
@@ -95,7 +118,8 @@ class StorageManager {
                 lastModified: new Date().toISOString()
             };
 
-            localStorage.setItem(STORAGE_KEYS.transactions, JSON.stringify(transactions));
+            const transactionsKey = this.getUserKey(STORAGE_KEYS.transactions);
+            localStorage.setItem(transactionsKey, JSON.stringify(transactions));
 
             return {
                 success: true,
@@ -122,7 +146,8 @@ class StorageManager {
                 };
             }
 
-            localStorage.setItem(STORAGE_KEYS.transactions, JSON.stringify(filteredTransactions));
+            const transactionsKey = this.getUserKey(STORAGE_KEYS.transactions);
+            localStorage.setItem(transactionsKey, JSON.stringify(filteredTransactions));
 
             return {
                 success: true,
@@ -139,7 +164,11 @@ class StorageManager {
 
     getSettings() {
         try {
-            return JSON.parse(localStorage.getItem(STORAGE_KEYS.settings)) || {};
+            if (!this.currentUser) {
+                return {};
+            }
+            const settingsKey = this.getUserKey(STORAGE_KEYS.settings);
+            return JSON.parse(localStorage.getItem(settingsKey)) || {};
         } catch (error) {
             console.error('Error reading settings:', error);
             return {};
@@ -150,7 +179,8 @@ class StorageManager {
         try {
             const currentSettings = this.getSettings();
             const updatedSettings = { ...currentSettings, ...settings };
-            localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(updatedSettings));
+            const settingsKey = this.getUserKey(STORAGE_KEYS.settings);
+            localStorage.setItem(settingsKey, JSON.stringify(updatedSettings));
             return { success: true, message: 'Settings updated successfully' };
         } catch (error) {
             console.error('Error updating settings:', error);
@@ -180,10 +210,13 @@ class StorageManager {
                 throw new Error('Invalid transactions data');
             }
 
-            localStorage.setItem(STORAGE_KEYS.transactions, JSON.stringify(data.transactions));
+            const transactionsKey = this.getUserKey(STORAGE_KEYS.transactions);
+            const settingsKey = this.getUserKey(STORAGE_KEYS.settings);
+            
+            localStorage.setItem(transactionsKey, JSON.stringify(data.transactions));
             
             if (data.settings) {
-                localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(data.settings));
+                localStorage.setItem(settingsKey, JSON.stringify(data.settings));
             }
 
             return {
@@ -201,8 +234,11 @@ class StorageManager {
 
     async clearData() {
         try {
-            localStorage.setItem(STORAGE_KEYS.transactions, JSON.stringify([]));
-            localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify({
+            const transactionsKey = this.getUserKey(STORAGE_KEYS.transactions);
+            const settingsKey = this.getUserKey(STORAGE_KEYS.settings);
+            
+            localStorage.setItem(transactionsKey, JSON.stringify([]));
+            localStorage.setItem(settingsKey, JSON.stringify({
                 monthlyBudget: 0,
                 theme: 'light',
                 currency: 'ALL',
