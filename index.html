@@ -24,7 +24,6 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <link rel="stylesheet" href="styles/main.css">
     <link rel="stylesheet" href="styles/components.css">
-    <link rel="stylesheet" href="styles/auth.css">
     <link rel="stylesheet" href="styles/menu-styles.css">
     <link rel="stylesheet" href="styles/balance.css">
     <link rel="stylesheet" href="styles/analytics.css">
@@ -36,27 +35,8 @@
     </script>
 </head>
 <body>
-    <!-- Login Overlay -->
-    <div class="login-overlay" id="login-overlay">
-        <div class="login-card">
-            <h2>Login</h2>
-            <form id="login-form" class="login-form">
-                <div class="form-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" required>
-                </div>
-                <div class="form-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" required>
-                </div>
-                <div class="error-message" id="login-error"></div>
-                <button type="submit" class="btn-primary">Login</button>
-            </form>
-        </div>
-    </div>
-
     <!-- Main App -->
-    <div class="app-container" id="app-container" style="display: none;">
+    <div class="app-container" id="app-container">
         <header class="app-header">
             <div class="header-content">
                 <div class="header-left">
@@ -180,17 +160,17 @@
                 <div class="settings-list">
                     <div class="settings-item">
                         <div class="settings-info">
-                            <h4>Bank Statement</h4>
-                            <p>Download your official bank statement</p>
+                            <h4>Export Data</h4>
+                            <p>Download your transaction history</p>
                         </div>
                         <button onclick="ui.exportData()" class="btn-primary">Export PDF</button>
                     </div>
                     <div class="settings-item">
                         <div class="settings-info">
-                            <h4>Account</h4>
-                            <p>Manage your account settings</p>
+                            <h4>Clear Data</h4>
+                            <p>Reset all data and start fresh</p>
                         </div>
-                        <button onclick="window.logout()" class="btn-secondary">Logout</button>
+                        <button onclick="localStorageManager.clearData()" class="btn-secondary">Clear Data</button>
                     </div>
                 </div>
             </section>
@@ -286,13 +266,8 @@
             await import(getModulePath('./js/utils.js'));
             
             // Load services
-            const { storageManager } = await import(getModulePath('./js/services/storage-manager.js'));
-            const { authService } = await import(getModulePath('./js/services/auth.js'));
+            const { localStorageManager } = await import(getModulePath('./js/services/local-storage-manager.js'));
             const { balanceManager } = await import(getModulePath('./js/services/balance-manager.js'));
-            
-            // Initialize storage and auth
-            await storageManager.initializeStorage();
-            window.logout = () => authService.logout();
             
             // Load UI and app
             await import(getModulePath('./js/ui.js'));

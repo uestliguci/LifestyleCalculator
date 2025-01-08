@@ -1,5 +1,5 @@
 import { ANIMATION_DURATION, BUDGET_ALERTS, CATEGORIES } from './config.js';
-import { storageManager } from './services/storage-manager.js';
+import { localStorageManager } from './services/local-storage-manager.js';
 import { formatCurrency, formatDate, debounce, detectAnomalies } from './utils.js';
 import { chartManager } from './charts.js';
 import { exportToPDF } from './services/pdf-export.js';
@@ -52,13 +52,7 @@ class UIManager {
     }
 
     async initializeDB() {
-        try {
-            await storageManager.initializeStorage();
-            console.log('Storage system initialized successfully');
-        } catch (error) {
-            console.error('Failed to initialize storage:', error);
-            this.showAlert('Failed to initialize storage. Some features may not work.', 'error');
-        }
+        console.log('Storage system initialized successfully');
     }
 
     /**
@@ -145,7 +139,7 @@ class UIManager {
         monthStart.setDate(1);
         monthStart.setHours(0, 0, 0, 0);
 
-        const transactions = await storageManager.getTransactions();
+        const transactions = await localStorageManager.getTransactions();
         const monthlyTransactions = transactions.filter(t => 
             new Date(t.date) >= monthStart && t.type === 'expense'
         );
@@ -338,7 +332,7 @@ class UIManager {
             };
 
             console.log('Submitting transaction:', transaction);
-            const result = await storageManager.addTransaction(transaction);
+            const result = await localStorageManager.addTransaction(transaction);
             
             if (result.success) {
                 this.showAlert('Transaction added successfully', 'success');
@@ -365,7 +359,7 @@ class UIManager {
      * Filter transactions based on search input
      */
     async filterTransactions(query) {
-        const transactions = await storageManager.getTransactions();
+        const transactions = await localStorageManager.getTransactions();
         const filtered = transactions.filter(t => 
             Object.values(t).some(value => 
                 String(value).toLowerCase().includes(query.toLowerCase())
@@ -378,7 +372,7 @@ class UIManager {
      * Update monthly analytics charts and summaries
      */
     async updateAnalytics(period = 'week') {
-        const transactions = await storageManager.getTransactions();
+        const transactions = await localStorageManager.getTransactions();
         const now = new Date();
         let startDate;
 
@@ -548,7 +542,7 @@ class UIManager {
      * Update spending visualization charts
      */
     async updateVisualization(viewType = 'daily') {
-        const transactions = await storageManager.getTransactions();
+        const transactions = await localStorageManager.getTransactions();
         try {
             const chartManager = await this.getChartManager();
             await chartManager.updateTrendChart('spending-chart', transactions, viewType);
@@ -562,7 +556,7 @@ class UIManager {
      * Update balance indicator with current total
      */
     async updateBalanceIndicator() {
-        const transactions = await storageManager.getTransactions();
+        const transactions = await localStorageManager.getTransactions();
         const balance = transactions.reduce((total, t) => 
             total + (t.type.toLowerCase() === 'income' ? 1 : -1) * parseFloat(t.amount)
         , 0);
@@ -578,7 +572,7 @@ class UIManager {
      * Update balance sheet charts
      */
     async updateBalanceSheet(year = new Date().getFullYear().toString()) {
-        const transactions = (await storageManager.getTransactions()).filter(t => 
+        const transactions = (await localStorageManager.getTransactions()).filter(t => 
             t.date.startsWith(year)
         );
 
@@ -609,17 +603,17 @@ class UIManager {
             settingsList.innerHTML = `
                 <div class="settings-item">
                     <div class="settings-info">
-                        <h4>Bank Statement</h4>
-                        <p>Download your official bank statement</p>
+                        <h4>Export Data</h4>
+                        <p>Download your transaction history</p>
                     </div>
                     <button onclick="ui.exportData()" class="btn-primary">Export PDF</button>
                 </div>
                 <div class="settings-item">
                     <div class="settings-info">
-                        <h4>Account</h4>
-                        <p>Manage your account settings</p>
+                        <h4>Clear Data</h4>
+                        <p>Reset all data and start fresh</p>
                     </div>
-                    <button onclick="window.logout()" class="btn-secondary">Logout</button>
+                    <button onclick="localStorageManager.clearData()" class="btn-secondary">Clear Data</button>
                 </div>
             `;
         }
@@ -674,7 +668,7 @@ class UIManager {
         if (!transactionsList) return;
 
         if (!transactions) {
-            transactions = await storageManager.getTransactions();
+            transactions = await localStorageManager.getTransactions();
         }
 
         const groupedTransactions = transactions.reduce((groups, t) => {

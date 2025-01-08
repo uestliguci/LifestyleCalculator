@@ -1,22 +1,3 @@
-// API Configuration
-const API_CONFIG = {
-    development: {
-        apiUrl: 'http://localhost:3001'
-    },
-    production: {
-        apiUrl: window.location.origin // Use same origin for API in production
-    }
-};
-
-// Get current environment
-const isDevelopment = window.location.hostname === 'localhost' || 
-                     window.location.hostname === '127.0.0.1';
-
-// API Configuration
-const config = {
-    apiUrl: isDevelopment ? API_CONFIG.development.apiUrl : API_CONFIG.production.apiUrl
-};
-
 // Transaction Categories
 const CATEGORIES = {
     income: [
@@ -70,9 +51,8 @@ const DATE_FORMATS = {
 
 // Local Storage Keys
 const STORAGE_KEYS = {
-    transactions: 'financial_transactions',
-    settings: 'financial_settings',
-    categories: 'custom_categories'
+    transactions: 'lifestyle_calculator_transactions',
+    settings: 'lifestyle_calculator_settings'
 };
 
 // Chart Configuration Defaults
@@ -119,6 +99,5 @@ export {
     STORAGE_KEYS,
     CHART_CONFIG,
     BUDGET_ALERTS,
-    ANIMATION_DURATION,
-    config
+    ANIMATION_DURATION
 };
