@@ -1,4 +1,4 @@
-import { storageManager } from './storage-manager.js';
+import { localStorageManager } from './local-storage-manager.js';
 import { jsPDF } from '../lib/jspdf.umd.min.js';
 import '../lib/jspdf.plugin.autotable.js';
 
@@ -8,7 +8,7 @@ import '../lib/jspdf.plugin.autotable.js';
  */
 export async function exportToPDF() {
     try {
-        const transactions = await storageManager.getTransactions();
+        const transactions = await localStorageManager.getTransactions();
         if (!transactions || transactions.length === 0) {
             alert('No transactions available for export');
             return;

@@ -1,19 +1,13 @@
-import { storageManager } from './services/storage-manager.js';
 import { ui } from './ui.js';
 import { chartManager } from './charts.js';
 import { CATEGORIES, CURRENCIES } from './config.js';
-import { authService } from './services/auth.js';
+import { localStorageManager } from './services/local-storage-manager.js';
 
 /**
  * Main application class
  */
 class App {
     constructor() {
-        this.appContainer = document.getElementById('app-container');
-        this.loginOverlay = document.getElementById('login-overlay');
-        this.loginForm = document.getElementById('login-form');
-        this.loginError = document.getElementById('login-error');
-        this.usernameDisplay = document.getElementById('username-display');
         this.initialize();
     }
 
@@ -22,102 +16,23 @@ class App {
      */
     async initialize() {
         try {
-            // Initialize storage
-            await storageManager.initializeStorage();
-            console.log('Storage system initialized successfully');
-            
-            // Setup authentication
-            this.setupAuth();
-
-            // Check if user is already logged in
-            const user = authService.getCurrentUser();
-            if (user) {
-                this.onLoginSuccess(user);
-            }
-
             // Setup event handlers for global functions
             const { viewTransaction } = await import('./services/transaction-viewer.js');
             window.viewTransaction = viewTransaction;
+
+            // Initialize UI components
+            this.initializeUI();
 
             // Add keyboard shortcuts
             this.setupKeyboardShortcuts();
 
             // Check for data import
             this.handleDataImport();
+
+            console.log('App initialized successfully');
         } catch (error) {
             console.error('Initialization error:', error);
             ui.showAlert('Failed to initialize app. Please refresh the page.', 'error');
-        }
-    }
-
-    /**
-     * Setup authentication handlers
-     */
-    setupAuth() {
-        // Handle login form submission
-        this.loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-
-            try {
-                const result = await authService.login(username, password);
-                if (result.success) {
-                    this.onLoginSuccess(result.user);
-                } else {
-                    this.loginError.textContent = result.message;
-                }
-            } catch (error) {
-                console.error('Login error:', error);
-                this.loginError.textContent = 'An error occurred during login';
-            }
-        });
-
-        // Handle logout
-        window.logout = () => {
-            authService.logout();
-            this.onLogout();
-        };
-    }
-
-    /**
-     * Handle successful login
-     */
-    onLoginSuccess(user) {
-        // Hide login overlay
-        if (this.loginOverlay) {
-            this.loginOverlay.style.display = 'none';
-        }
-        // Show app container
-        if (this.appContainer) {
-            this.appContainer.style.display = 'block';
-        }
-        // Display username
-        if (this.usernameDisplay) {
-            this.usernameDisplay.textContent = user.username;
-        }
-        // Initialize UI components
-        this.initializeUI();
-    }
-
-    /**
-     * Handle logout
-     */
-    onLogout() {
-        // Show login overlay
-        if (this.loginOverlay) {
-            this.loginOverlay.style.display = 'flex';
-        }
-        // Hide app container
-        if (this.appContainer) {
-            this.appContainer.style.display = 'none';
-        }
-        // Clear login form
-        if (this.loginForm) {
-            this.loginForm.reset();
-        }
-        if (this.loginError) {
-            this.loginError.textContent = '';
         }
     }
 
@@ -138,22 +53,6 @@ class App {
      * Initialize UI components
      */
     initializeUI() {
-        // Setup currency change handlers
-        const currencySelects = document.querySelectorAll('select[id$="-currency"]');
-        currencySelects.forEach(select => {
-            select.addEventListener('change', () => {
-                if (select.id === 'currency') {
-                    // Update amount label with selected currency
-                    const amountLabel = document.querySelector('label[for="amount"]');
-                    const currency = CURRENCIES[select.value];
-                    if (amountLabel && currency) {
-                        amountLabel.textContent = `Amount (${currency.symbol} - Albanian Lek)`;
-                    }
-                }
-                ui.refreshCurrentSection();
-            });
-        });
-
         // Set current month in analytics
         const analyticsMonth = document.getElementById('analytics-month');
         if (analyticsMonth) {
@@ -173,6 +72,9 @@ class App {
             }
         }
 
+        // Initialize transaction form
+        this.updateTransactionForm();
+
         // Initial data refresh
         ui.refreshCurrentSection();
     }
@@ -181,7 +83,7 @@ class App {
      * Get HTML options for category select
      */
     getCategoryOptions(type, selected = '') {
-        const categories = CATEGORIES[type] || [];
+        const categories = CATEGORIES[type.toLowerCase()] || [];
         return categories.map(category => 
             `<option value="${category}" ${category === selected ? 'selected' : ''}>${category}</option>`
         ).join('');
@@ -230,12 +132,11 @@ class App {
                 ui.exportData();
             }
 
-            // Escape to close modals or cancel edits
+            // Escape to close modals
             if (e.key === 'Escape') {
-                const editForm = document.querySelector('.edit-form');
-                if (editForm) {
-                    const cancelBtn = editForm.querySelector('.btn-secondary');
-                    if (cancelBtn) cancelBtn.click();
+                const modal = document.querySelector('.modal[style*="flex"]');
+                if (modal) {
+                    modal.style.display = 'none';
                 }
             }
         });
@@ -280,7 +181,7 @@ class App {
     async readAndImportFile(file) {
         const reader = new FileReader();
         reader.onload = async (e) => {
-            const result = await storageManager.importData(e.target.result);
+            const result = await localStorageManager.importData(e.target.result);
             if (result.success) {
                 ui.showAlert('Data imported successfully', 'success');
                 ui.refreshCurrentSection();
@@ -294,3 +195,4 @@ class App {
 
 // Initialize application
 const app = new App();
+window.app = app;

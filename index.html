@@ -261,21 +261,26 @@
         console.log('Chart manager initialized');
 
         try {
-            // Load core modules first
-            const { config } = await import(getModulePath('./js/config.js'));
+            // Load core modules
             await import(getModulePath('./js/utils.js'));
+            await import(getModulePath('./js/config.js'));
             
-            // Load services
+            // Load services first
             const { localStorageManager } = await import(getModulePath('./js/services/local-storage-manager.js'));
             const { balanceManager } = await import(getModulePath('./js/services/balance-manager.js'));
             
-            // Load UI and app
-            await import(getModulePath('./js/ui.js'));
-            await import(getModulePath('./js/app.js'));
+            // Initialize UI last
+            const { ui } = await import(getModulePath('./js/ui.js'));
+            const { app } = await import(getModulePath('./js/app.js'));
             
-            console.log('All modules loaded successfully');
+            // Make sure UI is initialized
+            if (ui && app) {
+                console.log('Application initialized successfully');
+                // Initialize transaction form
+                app.updateTransactionForm();
+            }
         } catch (error) {
-            console.error('Module loading error:', error);
+            console.error('Failed to initialize application:', error);
         }
 
         // Register service worker
