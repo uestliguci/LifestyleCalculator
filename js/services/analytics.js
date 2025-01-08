@@ -1,4 +1,4 @@
-import { postgresStorage } from './postgres-storage.js';
+import { storageManager } from './storage-manager.js';
 import { chartManager } from '../charts.js';
 
 class AnalyticsService {
@@ -42,7 +42,7 @@ class AnalyticsService {
 
     async updateAnalytics(period) {
         try {
-            const transactions = await postgresStorage.getAllTransactions();
+            const transactions = await storageManager.getTransactions();
             if (!transactions || transactions.length === 0) {
                 this.showNoDataMessage();
                 return;

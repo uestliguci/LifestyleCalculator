@@ -1,4 +1,4 @@
-import { postgresStorage } from './postgres-storage.js';
+import { storageManager } from './storage-manager.js';
 import { formatCurrency } from '../utils.js';
 import { CATEGORIES } from '../config.js';
 
@@ -13,13 +13,13 @@ export class BalanceManager {
     }
 
     async loadTransactions() {
-        this.transactions = await postgresStorage.getTransactions();
+        this.transactions = await storageManager.getTransactions();
         return this.transactions;
     }
 
     async deleteTransaction(id) {
         try {
-            await postgresStorage.deleteTransaction(id);
+            await storageManager.deleteTransaction(id);
             this.transactions = this.transactions.filter(t => t.id !== id);
             if (this.ui) {
                 await this.ui.refreshCurrentSection();
@@ -37,7 +37,7 @@ export class BalanceManager {
 
     async editTransaction(transaction) {
         try {
-            await postgresStorage.updateTransaction(transaction);
+            await storageManager.updateTransaction(transaction.id, transaction);
             const index = this.transactions.findIndex(t => t.id === transaction.id);
             if (index !== -1) {
                 this.transactions[index] = transaction;

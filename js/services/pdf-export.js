@@ -1,4 +1,4 @@
-import { postgresStorage } from './postgres-storage.js';
+import { storageManager } from './storage-manager.js';
 import { jsPDF } from '../lib/jspdf.umd.min.js';
 import '../lib/jspdf.plugin.autotable.min.js';
 
@@ -8,7 +8,7 @@ import '../lib/jspdf.plugin.autotable.min.js';
  */
 export async function exportToPDF() {
     try {
-        const transactions = await postgresStorage.getAllTransactions();
+        const transactions = await storageManager.getTransactions();
         if (!transactions || transactions.length === 0) {
             alert('No transactions available for export');
             return;
