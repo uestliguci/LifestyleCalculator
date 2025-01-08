@@ -6,7 +6,16 @@
     <title>Financial Management System</title>
     <meta name="description" content="Track your income and expenses with detailed analytics">
     <meta name="theme-color" content="#3498db">
-    <link rel="manifest" href="./manifest.json">
+    <script>
+        // Helper to get correct asset path
+        const getAssetPath = (path) => {
+            const isLocal = window.location.hostname === 'localhost' || 
+                          window.location.hostname === '127.0.0.1' ||
+                          window.location.protocol === 'file:';
+            return isLocal ? path : `/LifestyleCalculator${path}`;
+        };
+    </script>
+    <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icons/icon-192x192.png">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -17,12 +26,18 @@
     <link rel="stylesheet" href="styles/menu-styles.css">
     <link rel="stylesheet" href="styles/balance.css">
     <link rel="stylesheet" href="styles/analytics.css">
+    <script>
+        // Update stylesheet paths
+        document.querySelectorAll('link[rel="stylesheet"]').forEach(link => {
+            link.href = getAssetPath(link.getAttribute('href'));
+        });
+    </script>
 </head>
 <body>
     <!-- Login Overlay -->
     <div class="login-overlay" id="login-overlay">
         <div class="login-card">
-            <h2>Login</h2>
+            <h2>Private Login</h2>
             <form id="login-form" class="login-form">
                 <div class="form-group">
                     <label for="username">Username</label>
@@ -243,33 +258,41 @@
     <!-- Load libraries -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="js/lib/jspdf.umd.min.js"></script>
+    <script src="js/lib/jspdf.umd.min.js" onload="this.src = getAssetPath(this.getAttribute('src'))"></script>
 
     <!-- Initialize application -->
     <script type="module">
+        // Helper to get correct module path
+        const getModulePath = (path) => {
+            // Check if we're running locally
+            const isLocal = window.location.hostname === 'localhost' || 
+                          window.location.hostname === '127.0.0.1' ||
+                          window.location.protocol === 'file:';
+            return isLocal ? path : `/LifestyleCalculator${path}`;
+        };
 
         // Initialize chart manager
-        const { chartManager } = await import('./js/charts.js');
+        const { chartManager } = await import(getModulePath('./js/charts.js'));
         window.chartManager = chartManager;
         console.log('Chart manager initialized');
 
         try {
             // Load core modules first
-            const { config } = await import('./js/config.js');
-            await import('./js/utils.js');
+            const { config } = await import(getModulePath('./js/config.js'));
+            await import(getModulePath('./js/utils.js'));
             
             // Load services
-            const { storageManager } = await import('./js/services/storage-manager.js');
-            const { authService } = await import('./js/services/auth.js');
-            const { balanceManager } = await import('./js/services/balance-manager.js');
+            const { storageManager } = await import(getModulePath('./js/services/storage-manager.js'));
+            const { authService } = await import(getModulePath('./js/services/auth.js'));
+            const { balanceManager } = await import(getModulePath('./js/services/balance-manager.js'));
             
             // Initialize storage and auth
             await storageManager.initializeStorage();
             window.logout = () => authService.logout();
             
             // Load UI and app
-            await import('./js/ui.js');
-            await import('./js/app.js');
+            await import(getModulePath('./js/ui.js'));
+            await import(getModulePath('./js/app.js'));
             
             console.log('All modules loaded successfully');
         } catch (error) {
@@ -279,7 +302,7 @@
         // Register service worker
         if ('serviceWorker' in navigator) {
             try {
-                const registration = await navigator.serviceWorker.register('./js/service-worker.js');
+                const registration = await navigator.serviceWorker.register(getModulePath('./js/service-worker.js'));
                 console.log('ServiceWorker registration successful');
             } catch (err) {
                 console.log('ServiceWorker registration failed:', err);

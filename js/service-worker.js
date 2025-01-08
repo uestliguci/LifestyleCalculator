@@ -78,7 +78,22 @@ self.addEventListener('fetch', (event) => {
                     return response;
                 }
 
-                return fetch(event.request).then(response => {
+                // Determine if we're running locally
+                const isLocal = location.hostname === 'localhost' || 
+                              location.hostname === '127.0.0.1' ||
+                              location.protocol === 'file:';
+
+                // Adjust request URL based on environment
+                let requestUrl = event.request.url;
+                if (!isLocal && requestUrl.includes('/LifestyleCalculator/')) {
+                    // We're on GitHub Pages, use the full path
+                    requestUrl = event.request.url;
+                } else if (requestUrl.includes('/LifestyleCalculator/')) {
+                    // We're local but URL contains the GitHub Pages path, strip it
+                    requestUrl = requestUrl.replace('/LifestyleCalculator/', '/');
+                }
+
+                return fetch(new Request(requestUrl)).then(response => {
                     // Check if we received a valid response
                     if (!response || response.status !== 200 || response.type !== 'basic') {
                         return response;
