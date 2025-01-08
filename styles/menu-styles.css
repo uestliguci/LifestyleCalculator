@@ -1,14 +1,19 @@
 /* Menu Sections */
 .menu-section {
     display: none;
-    padding: 1rem;
-    min-height: calc(100vh - 180px);
+    padding: 16px;
+    min-height: calc(100vh - 180px - var(--safe-area-inset-bottom));
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    opacity: 0;
+    transform: translateX(20px);
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
 }
 
 .menu-section.active {
     display: block;
+    opacity: 1;
+    transform: translateX(0);
 }
 
 /* Tab Bar */
@@ -17,14 +22,17 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 60px;
-    background: white;
+    height: calc(60px + var(--safe-area-inset-bottom));
+    background: var(--surface-color);
     display: flex;
     justify-content: space-around;
     align-items: center;
-    padding: 0 1rem;
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    padding: 0 16px;
+    padding-bottom: var(--safe-area-inset-bottom);
+    box-shadow: 0 -1px 0 var(--border-color);
     z-index: 1000;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
 }
 
 .tab-item {
@@ -40,79 +48,86 @@
     background: none;
     cursor: pointer;
     width: 33.33%;
+    position: relative;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .tab-item svg {
     margin-bottom: 4px;
+    stroke-width: 1.5;
+    transition: all 0.2s;
 }
 
 .tab-item span {
     font-size: 12px;
     font-weight: 500;
+    transition: all 0.2s;
 }
 
 .tab-item.active {
     color: var(--primary-color);
 }
 
-/* Transaction Menu Styles */
+.tab-item.active svg {
+    stroke-width: 2;
+    transform: scale(1.1);
+}
+
+.tab-item.active span {
+    font-weight: 600;
+}
+
+/* Transaction List */
 .transaction-list {
-    padding: 1rem;
-    background: var(--surface-color);
+    margin-top: 16px;
     border-radius: 16px;
-    box-shadow: var(--shadow-sm);
+    overflow: hidden;
 }
 
 .transaction-group {
-    margin-bottom: 1.5rem;
+    margin-bottom: 24px;
 }
 
 .transaction-date {
-    font-size: 0.9rem;
+    font-size: 14px;
+    font-weight: 600;
     color: var(--text-secondary);
-    padding: 0.5rem 1rem;
-    background: var(--background-color);
-    border-radius: 8px;
-    margin-bottom: 0.5rem;
-    font-weight: 500;
+    margin-bottom: 12px;
+    padding: 0 12px;
 }
 
 .transaction-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem;
-    background: white;
+    background: var(--surface-color);
+    padding: 16px;
     border-radius: 12px;
-    margin-bottom: 0.5rem;
-    transition: transform 0.2s, box-shadow 0.2s;
-    cursor: pointer;
-    border: 1px solid var(--border-color);
-}
-
-.transaction-item:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    box-shadow: var(--shadow-sm);
+    transform: translateX(0);
+    transition: transform 0.3s ease-out;
 }
 
 .transaction-info {
     flex: 1;
+    margin-right: 16px;
 }
 
 .transaction-title {
     font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 0.25rem;
+    font-size: 16px;
+    margin-bottom: 4px;
 }
 
 .transaction-category {
-    font-size: 0.9rem;
     color: var(--text-secondary);
+    font-size: 14px;
 }
 
 .transaction-amount {
     font-weight: 600;
-    padding: 0.5rem 1rem;
+    font-size: 16px;
+    padding: 8px 16px;
     border-radius: 8px;
     min-width: 100px;
     text-align: right;
@@ -128,143 +143,136 @@
     background: var(--danger-bg);
 }
 
-/* Settings Menu Styles */
-.settings-list {
-    padding: 1rem;
+/* Analytics Section */
+.analytics-period-selector {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    padding: 4px;
+    background: var(--background-color);
+    border-radius: 12px;
+}
+
+.period-btn {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    background: none;
+    border-radius: 8px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+
+.period-btn.active {
     background: var(--surface-color);
+    color: var(--primary-color);
+    box-shadow: var(--shadow-sm);
+}
+
+.analytics-cards {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.analytics-card {
+    background: var(--surface-color);
+    padding: 20px;
     border-radius: 16px;
     box-shadow: var(--shadow-sm);
 }
 
+.analytics-card h4 {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.analytics-card .amount {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.analytics-card .trend {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.trend.positive {
+    color: var(--success-color);
+}
+
+.trend.negative {
+    color: var(--danger-color);
+}
+
+/* Settings Section */
+.settings-list {
+    background: var(--surface-color);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
 .settings-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.25rem;
-    background: white;
-    border-radius: 12px;
-    margin-bottom: 0.75rem;
-    border: 1px solid var(--border-color);
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.settings-item:last-child {
+    border-bottom: none;
 }
 
 .settings-info h4 {
-    color: var(--text-primary);
-    margin-bottom: 0.25rem;
+    font-size: 16px;
     font-weight: 600;
+    margin-bottom: 4px;
 }
 
 .settings-info p {
+    font-size: 14px;
     color: var(--text-secondary);
-    font-size: 0.9rem;
-}
-
-.settings-item button {
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    font-weight: 500;
-    transition: all 0.2s;
-}
-
-.settings-item button:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
-}
-
-/* Search and Filter Section */
-.section-header {
-    margin-bottom: 1.5rem;
-    padding: 1rem;
-    background: var(--surface-color);
-    border-radius: 12px;
-    box-shadow: var(--shadow-sm);
-}
-
-.section-header h3 {
-    margin-bottom: 1rem;
-    color: var(--text-primary);
-    font-weight: 600;
-}
-
-.search-input {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    font-size: 1rem;
-    transition: border-color 0.2s;
-}
-
-.search-input:focus {
-    border-color: var(--primary-color);
-    outline: none;
-    box-shadow: 0 0 0 2px var(--primary-color-light);
-}
-
-/* Mobile Optimization */
-@media (max-width: 768px) {
-    .transaction-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-    }
-
-    .transaction-amount {
-        width: 100%;
-        text-align: left;
-    }
-
-    .settings-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
-    }
-
-    .settings-item button {
-        width: 100%;
-    }
-
-    .menu-section {
-        padding-bottom: 80px; /* Add space for tab bar */
-    }
 }
 
 /* Dark Mode Support */
 @media (prefers-color-scheme: dark) {
     .tab-bar {
-        background: var(--surface-color-dark);
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
-    }
-
-    .tab-item {
-        color: var(--text-secondary-dark);
-    }
-
-    .tab-item.active {
-        color: var(--primary-color-light);
+        background: rgba(28, 28, 30, 0.8);
+        box-shadow: none;
     }
 
     .transaction-item,
-    .settings-item {
+    .analytics-card,
+    .settings-list {
         background: var(--surface-color-dark);
-        border-color: var(--border-color-dark);
+    }
+
+    .period-btn.active {
+        background: var(--surface-color-dark);
+    }
+
+    .analytics-period-selector {
+        background: var(--surface-color-dark);
+    }
+}
+
+/* iPhone 14/16 Pro Max Optimizations */
+@media only screen and (min-width: 428px) {
+    .analytics-cards {
+        grid-template-columns: repeat(3, 1fr);
     }
 
     .transaction-title {
-        color: var(--text-primary-dark);
+        font-size: 18px;
     }
 
-    .transaction-category,
-    .settings-info p {
-        color: var(--text-secondary-dark);
+    .transaction-amount {
+        font-size: 18px;
     }
 
     .settings-info h4 {
-        color: var(--text-primary-dark);
-    }
-
-    .search-input {
-        background: var(--surface-color-dark);
-        border-color: var(--border-color-dark);
-        color: var(--text-primary-dark);
+        font-size: 18px;
     }
 }

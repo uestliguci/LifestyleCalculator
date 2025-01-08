@@ -53,33 +53,86 @@ class App {
      * Initialize UI components
      */
     initializeUI() {
-        // Initialize transaction form
+        // Initialize transaction form and modal
+        const addButton = document.querySelector('.add-button');
+        const modal = document.getElementById('add-transaction-modal');
         const typeSelect = document.getElementById('transaction-type');
-        if (typeSelect) {
+        const closeBtn = modal?.querySelector('.btn-close');
+
+        if (addButton && modal && typeSelect) {
+            // Initialize form when modal is shown
+            addButton.addEventListener('click', () => {
+                modal.style.display = 'flex';
+                this.updateTransactionForm();
+            });
+
+            // Update categories when type changes
             typeSelect.addEventListener('change', () => this.updateTransactionForm());
-            // Initialize categories on load
-            this.updateTransactionForm();
+
+            // Close modal on backdrop click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+
+            // Close modal on close button click
+            closeBtn?.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
         }
 
-        // Initialize bottom menu tabs
+        // Initialize bottom menu tabs with iOS-style transitions
         document.querySelectorAll('.tab-item').forEach(tab => {
             tab.addEventListener('click', () => {
                 const menuId = tab.dataset.menu;
                 if (menuId) {
-                    // Update active tab
-                    document.querySelectorAll('.tab-item').forEach(t => 
-                        t.classList.toggle('active', t === tab)
-                    );
+                    // Update active tab with animation
+                    document.querySelectorAll('.tab-item').forEach(t => {
+                        if (t === tab) {
+                            if (!t.classList.contains('active')) {
+                                t.classList.add('active');
+                                t.querySelector('svg')?.animate([
+                                    { transform: 'scale(1)' },
+                                    { transform: 'scale(1.2)' },
+                                    { transform: 'scale(1.1)' }
+                                ], {
+                                    duration: 300,
+                                    easing: 'ease-out'
+                                });
+                            }
+                        } else {
+                            t.classList.remove('active');
+                        }
+                    });
                     
-                    // Show selected section
+                    // Show selected section with transition
                     document.querySelectorAll('.menu-section').forEach(section => {
-                        section.classList.toggle('active', section.id === menuId);
+                        if (section.id === menuId) {
+                            section.style.display = 'block';
+                            requestAnimationFrame(() => {
+                                section.classList.add('active');
+                            });
+                        } else {
+                            section.classList.remove('active');
+                            section.addEventListener('transitionend', () => {
+                                if (!section.classList.contains('active')) {
+                                    section.style.display = 'none';
+                                }
+                            }, { once: true });
+                        }
                     });
 
-                    // Update section title
+                    // Update section title with animation
                     const sectionTitle = document.querySelector('.section-title');
                     if (sectionTitle) {
-                        sectionTitle.textContent = menuId.charAt(0).toUpperCase() + menuId.slice(1);
+                        sectionTitle.style.opacity = '0';
+                        sectionTitle.style.transform = 'translateY(10px)';
+                        setTimeout(() => {
+                            sectionTitle.textContent = menuId.charAt(0).toUpperCase() + menuId.slice(1);
+                            sectionTitle.style.opacity = '1';
+                            sectionTitle.style.transform = 'translateY(0)';
+                        }, 150);
                     }
 
                     // Refresh section content
