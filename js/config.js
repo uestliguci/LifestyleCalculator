@@ -57,3 +57,19 @@ export const BUDGET_ALERTS = [
         message: 'Food expenses have exceeded 10,000 Lek'
     }
 ];
+
+// Date format configuration
+export const DATE_FORMATS = {
+    display: {
+        date: 'MMM DD, YYYY',
+        time: 'hh:mm A',
+        dateTime: 'MMM DD, YYYY hh:mm A',
+        month: 'MMMM YYYY'
+    },
+    storage: {
+        date: 'YYYY-MM-DD',
+        time: 'HH:mm',
+        dateTime: 'YYYY-MM-DDTHH:mm:ss.sssZ',
+        month: 'YYYY-MM'
+    }
+};
