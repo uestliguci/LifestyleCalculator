@@ -154,9 +154,39 @@ export async function exportToPDF() {
         // Save PDF with iOS-friendly filename
         const filename = `bank-statement-${new Date().toISOString().split('T')[0]}.pdf`;
         if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
-            // For iOS devices, use a data URL to trigger download
+            // For iOS devices, open in new window for immediate viewing
             const pdfOutput = doc.output('datauristring');
-            window.location.href = pdfOutput;
+            const newWindow = window.open();
+            if (newWindow) {
+                newWindow.document.write(`
+                    <html>
+                        <head>
+                            <title>Bank Statement</title>
+                            <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+                            <style>
+                                body, html {
+                                    margin: 0;
+                                    padding: 0;
+                                    width: 100%;
+                                    height: 100%;
+                                }
+                                iframe {
+                                    border: none;
+                                    width: 100%;
+                                    height: 100%;
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <iframe src="${pdfOutput}"></iframe>
+                        </body>
+                    </html>
+                `);
+                newWindow.document.close();
+            } else {
+                // Fallback if popup is blocked
+                window.location.href = pdfOutput;
+            }
         } else {
             doc.save(filename);
         }

@@ -531,6 +531,12 @@ class UIManager {
             transactions = await localStorageManager.getTransactions();
         }
 
+        // Calculate total balance
+        const balance = transactions.reduce((total, t) => 
+            total + (t.type.toLowerCase() === 'income' ? 1 : -1) * parseFloat(t.amount)
+        , 0);
+
+        // Group transactions by date
         const groupedTransactions = transactions.reduce((groups, t) => {
             const date = new Date(t.date).toLocaleDateString();
             if (!groups[date]) groups[date] = [];
@@ -538,42 +544,109 @@ class UIManager {
             return groups;
         }, {});
 
-        transactionsList.innerHTML = Object.entries(groupedTransactions).map(([date, dayTransactions]) => `
-            <div class="transaction-group">
-                <div class="transaction-date">${date}</div>
-                ${dayTransactions.map(t => `
-                    <div class="transaction-item" data-id="${t.id}">
-                        <div class="transaction-info">
-                            <div class="transaction-title">${t.category}</div>
-                            <div class="transaction-details">
-                                <span class="transaction-type ${t.type.toLowerCase()}">${t.type}</span>
-                                <span class="transaction-description">${t.description || 'No description'}</span>
+        // Create the transactions view
+        transactionsList.innerHTML = `
+            <div class="balance-card">
+                <div class="balance-header">
+                    <h2>Total Balance</h2>
+                    <span class="balance-amount ${balance >= 0 ? 'positive' : 'negative'}">
+                        ${formatCurrency(Math.abs(balance))}
+                    </span>
+                    <span class="balance-trend">
+                        ${balance >= 0 ? 'Available Balance' : 'Negative Balance'}
+                    </span>
+                </div>
+            </div>
+
+            <div class="transactions-container">
+                <div class="transactions-header">
+                    <h3>Recent Transactions</h3>
+                    <div class="search-container">
+                        <input type="text" id="search-transactions" placeholder="Search transactions..." class="search-input">
+                        <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="swipe-hint">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                    </svg>
+                    <span>Swipe left to edit or delete</span>
+                </div>
+
+                ${Object.entries(groupedTransactions).map(([date, dayTransactions]) => `
+                    <div class="transaction-group">
+                        <div class="transaction-date">
+                            <span class="date-label">${new Date(date).toLocaleDateString('en-US', { 
+                                weekday: 'short', 
+                                month: 'short', 
+                                day: 'numeric'
+                            })}</span>
+                            <span class="date-total">
+                                ${formatCurrency(dayTransactions.reduce((sum, t) => 
+                                    sum + (t.type === 'income' ? 1 : -1) * parseFloat(t.amount), 0
+                                ))}
+                            </span>
+                        </div>
+                        ${dayTransactions.map(t => `
+                            <div class="transaction-item" data-id="${t.id}">
+                                <div class="transaction-icon ${t.type.toLowerCase()}">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        ${t.type === 'income' ? 
+                                            '<path d="M12 3v18M5 10l7-7 7 7"/>' : 
+                                            '<path d="M12 21V3M5 14l7 7 7-7"/>'
+                                        }
+                                    </svg>
+                                </div>
+                                <div class="transaction-info">
+                                    <div class="transaction-primary">
+                                        <span class="transaction-category">${t.category}</span>
+                                        <span class="transaction-amount ${t.type.toLowerCase()}">
+                                            ${t.type === 'expense' ? '-' : '+'}${formatCurrency(t.amount)}
+                                        </span>
+                                    </div>
+                                    <div class="transaction-secondary">
+                                        <span class="transaction-description">${t.description || 'No description'}</span>
+                                        <span class="transaction-time">
+                                            ${new Date(t.date).toLocaleTimeString('en-US', { 
+                                                hour: '2-digit', 
+                                                minute: '2-digit'
+                                            })}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="transaction-actions">
+                                    <button class="btn-edit" onclick="balanceManager.showEditModal('${t.id}')">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                    </button>
+                                    <button class="btn-delete" onclick="balanceManager.showDeleteConfirmation('${t.id}')">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                        <div class="transaction-amount ${t.type.toLowerCase()}">
-                            ${t.type === 'expense' ? '-' : '+'}${formatCurrency(t.amount)}
-                        </div>
-                        <div class="transaction-actions">
-                            <button class="btn-edit" onclick="balanceManager.showEditModal('${t.id}')">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                                </svg>
-                            </button>
-                            <button class="btn-delete" onclick="balanceManager.showDeleteConfirmation('${t.id}')">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                </svg>
-                            </button>
-                        </div>
+                        `).join('')}
                     </div>
                 `).join('')}
             </div>
-        `).join('');
+        `;
 
         // Initialize swipe actions
         this.setupSwipeActions();
+
+        // Initialize search functionality
+        const searchInput = document.getElementById('search-transactions');
+        if (searchInput) {
+            searchInput.addEventListener('input', debounce((e) => this.filterTransactions(e.target.value), 300));
+        }
     }
 
     /**
