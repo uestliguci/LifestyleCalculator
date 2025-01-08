@@ -53,6 +53,41 @@ class App {
      * Initialize UI components
      */
     initializeUI() {
+        // Initialize transaction form
+        const typeSelect = document.getElementById('transaction-type');
+        if (typeSelect) {
+            typeSelect.addEventListener('change', () => this.updateTransactionForm());
+            // Initialize categories on load
+            this.updateTransactionForm();
+        }
+
+        // Initialize bottom menu tabs
+        document.querySelectorAll('.tab-item').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const menuId = tab.dataset.menu;
+                if (menuId) {
+                    // Update active tab
+                    document.querySelectorAll('.tab-item').forEach(t => 
+                        t.classList.toggle('active', t === tab)
+                    );
+                    
+                    // Show selected section
+                    document.querySelectorAll('.menu-section').forEach(section => {
+                        section.classList.toggle('active', section.id === menuId);
+                    });
+
+                    // Update section title
+                    const sectionTitle = document.querySelector('.section-title');
+                    if (sectionTitle) {
+                        sectionTitle.textContent = menuId.charAt(0).toUpperCase() + menuId.slice(1);
+                    }
+
+                    // Refresh section content
+                    ui.refreshCurrentSection();
+                }
+            });
+        });
+
         // Set current month in analytics
         const analyticsMonth = document.getElementById('analytics-month');
         if (analyticsMonth) {
@@ -71,9 +106,6 @@ class App {
                 balanceSheetYear.appendChild(option);
             }
         }
-
-        // Initialize transaction form
-        this.updateTransactionForm();
 
         // Initial data refresh
         ui.refreshCurrentSection();
@@ -112,12 +144,6 @@ class App {
      * Setup keyboard shortcuts
      */
     setupKeyboardShortcuts() {
-        // Add transaction type change handler
-        const typeSelect = document.getElementById('transaction-type');
-        if (typeSelect) {
-            typeSelect.addEventListener('change', () => this.updateTransactionForm());
-        }
-
         document.addEventListener('keydown', (e) => {
             // Ctrl/Cmd + S to save current transaction
             if ((e.ctrlKey || e.metaKey) && e.key === 's') {
