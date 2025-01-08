@@ -75,11 +75,101 @@ body {
     color: var(--text-primary);
 }
 
-.transaction-details {
+.transaction-details.ios-style {
     display: flex;
-    gap: 8px;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+    background: var(--surface-color);
+    border-radius: 12px;
+    margin: 8px 0;
+    box-shadow: var(--shadow-sm);
+}
+
+.transaction-details.ios-style .detail-row {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.transaction-details.ios-style .detail-row:last-child {
+    border-bottom: none;
+}
+
+.transaction-details.ios-style .label {
+    color: var(--text-secondary);
     font-size: 14px;
+    font-weight: 500;
+}
+
+.transaction-details.ios-style .value {
+    font-size: 15px;
+    font-weight: 400;
+}
+
+.transaction-details.ios-style .value.category-tag {
+    background: var(--primary-color-light);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 16px;
+    font-size: 13px;
+}
+
+.transaction-details.ios-style .value.amount-tag {
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 8px;
+}
+
+.transaction-details.ios-style .value.amount-tag.income {
+    background: var(--success-bg);
+    color: var(--success-color);
+}
+
+.transaction-details.ios-style .value.amount-tag.expense {
+    background: var(--danger-bg);
+    color: var(--danger-color);
+}
+
+.transaction-details.ios-style .value.monospace {
+    font-family: "SF Mono", SFMono-Regular, ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+/* iPhone Pro Max Optimizations */
+@media only screen 
+and (device-width: 430px) 
+and (device-height: 932px),
+(device-width: 428px) 
+and (device-height: 926px) {
+    .transaction-item {
+        padding: 20px;
+        margin-bottom: 12px;
+    }
+
+    .transaction-title {
+        font-size: 18px;
+    }
+
+    .transaction-amount {
+        font-size: 18px;
+        min-width: 120px;
+    }
+
+    .transaction-details.ios-style {
+        padding: 20px;
+    }
+
+    .transaction-details.ios-style .label {
+        font-size: 16px;
+    }
+
+    .transaction-details.ios-style .value {
+        font-size: 17px;
+    }
 }
 
 .transaction-type {

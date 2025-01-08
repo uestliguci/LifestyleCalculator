@@ -37,20 +37,28 @@ export class BalanceManager {
 
     async editTransaction(transaction) {
         try {
-            await localStorageManager.updateTransaction(transaction.id, transaction);
-            const index = this.transactions.findIndex(t => t.id === transaction.id);
-            if (index !== -1) {
-                this.transactions[index] = transaction;
+            const result = await localStorageManager.updateTransaction(transaction.id, transaction);
+            
+            if (result.success) {
+                const index = this.transactions.findIndex(t => t.id === transaction.id);
+                if (index !== -1) {
+                    this.transactions[index] = {
+                        ...transaction,
+                        lastModified: new Date().toISOString()
+                    };
+                }
+                if (this.ui) {
+                    await this.ui.refreshCurrentSection();
+                    this.ui.showAlert('Transaction updated successfully', 'success');
+                }
+                return true;
+            } else {
+                throw new Error(result.message);
             }
-            if (this.ui) {
-                await this.ui.refreshCurrentSection();
-                this.ui.showAlert('Transaction updated successfully', 'success');
-            }
-            return true;
         } catch (error) {
             console.error('Edit transaction error:', error);
             if (this.ui) {
-                this.ui.showAlert('Failed to update transaction', 'error');
+                this.ui.showAlert(error.message || 'Failed to update transaction', 'error');
             }
             return false;
         }

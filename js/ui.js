@@ -503,8 +503,17 @@ class UIManager {
      */
     async exportData() {
         try {
+            // Use the same PDF export logic for both bank statement and regular export
             await exportToPDF();
             this.showAlert('Bank statement exported successfully', 'success');
+            
+            // Track export event
+            if (window.gtag) {
+                window.gtag('event', 'export_statement', {
+                    'event_category': 'user_action',
+                    'event_label': 'bank_statement'
+                });
+            }
         } catch (error) {
             console.error('Export error:', error);
             this.showAlert('Failed to export bank statement', 'error');
@@ -576,10 +585,10 @@ class UIManager {
             settingsList.innerHTML = `
                 <div class="settings-item">
                     <div class="settings-info">
-                        <h4>Export Data</h4>
-                        <p>Download your transaction history</p>
+                        <h4>Bank Statement</h4>
+                        <p>Download your transaction history as a professional bank statement</p>
                     </div>
-                    <button onclick="ui.exportData()" class="btn-primary">Export PDF</button>
+                    <button onclick="ui.exportData()" class="btn-primary">Download Statement</button>
                 </div>
                 <div class="settings-item">
                     <div class="settings-info">

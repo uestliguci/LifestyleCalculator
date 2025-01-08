@@ -30,29 +30,31 @@ export async function viewTransaction(id) {
 
         // Show transaction details
         const details = `
-            <div class="transaction-details">
+            <div class="transaction-details ios-style">
                 <div class="detail-row">
-                    <span class="label">Date:</span>
+                    <span class="label">Date & Time:</span>
                     <span class="value">${formattedDate}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="label">Type:</span>
+                    <span class="label">Transaction Type:</span>
                     <span class="value ${transaction.type.toLowerCase()}">${transaction.type}</span>
                 </div>
                 <div class="detail-row">
                     <span class="label">Category:</span>
-                    <span class="value">${transaction.category}</span>
+                    <span class="value category-tag">${transaction.category}</span>
                 </div>
                 <div class="detail-row">
                     <span class="label">Amount:</span>
-                    <span class="value ${transaction.type.toLowerCase()}">${formattedAmount}</span>
+                    <span class="value amount-tag ${transaction.type.toLowerCase()}">${formattedAmount}</span>
                 </div>
-                ${transaction.description ? `
                 <div class="detail-row">
                     <span class="label">Description:</span>
-                    <span class="value">${transaction.description}</span>
+                    <span class="value">${transaction.description || 'No description provided'}</span>
                 </div>
-                ` : ''}
+                <div class="detail-row">
+                    <span class="label">Transaction ID:</span>
+                    <span class="value monospace">${transaction.id}</span>
+                </div>
             </div>
         `;
 
