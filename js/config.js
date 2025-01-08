@@ -1,3 +1,22 @@
+// API Configuration
+const API_CONFIG = {
+    development: {
+        apiUrl: 'http://localhost:3001'
+    },
+    production: {
+        apiUrl: window.location.origin // Use same origin for API in production
+    }
+};
+
+// Get current environment
+const isDevelopment = window.location.hostname === 'localhost' || 
+                     window.location.hostname === '127.0.0.1';
+
+// Export API configuration
+export const config = {
+    apiUrl: isDevelopment ? API_CONFIG.development.apiUrl : API_CONFIG.production.apiUrl
+};
+
 // Transaction Categories
 const CATEGORIES = {
     income: [
@@ -100,5 +119,6 @@ export {
     STORAGE_KEYS,
     CHART_CONFIG,
     BUDGET_ALERTS,
-    ANIMATION_DURATION
+    ANIMATION_DURATION,
+    config
 };

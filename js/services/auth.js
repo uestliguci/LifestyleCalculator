@@ -1,42 +1,44 @@
 export class AuthService {
     constructor() {
         this.currentUser = null;
-        this.baseUrl = 'http://localhost:3001';
+        this.initializeFromStorage();
+    }
+
+    initializeFromStorage() {
+        const storedUser = localStorage.getItem('currentUser');
+        if (storedUser) {
+            try {
+                this.currentUser = JSON.parse(storedUser);
+            } catch (error) {
+                console.error('Failed to restore user:', error);
+                this.logout();
+            }
+        }
     }
 
     async login(username, password) {
-        try {
-            const response = await fetch(`${this.baseUrl}/auth/login`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ username, password })
-            });
-
-            const result = await response.json();
-            
-            if (!result.success) {
-                return {
-                    success: false,
-                    message: result.message || 'Invalid username or password'
-                };
-            }
-
-            this.currentUser = result.user;
-            localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-
-            return {
-                success: true,
-                user: this.currentUser
-            };
-        } catch (error) {
-            console.error('Login error:', error);
+        // For GitHub Pages demo, accept any non-empty credentials
+        if (!username || !password) {
             return {
                 success: false,
-                message: 'An error occurred during login'
+                message: 'Username and password are required'
             };
         }
+
+        // Create demo user
+        this.currentUser = {
+            username,
+            name: username,
+            role: 'user',
+            lastLogin: new Date().toISOString()
+        };
+
+        localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
+
+        return {
+            success: true,
+            user: this.currentUser
+        };
     }
 
     logout() {

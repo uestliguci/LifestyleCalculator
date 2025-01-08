@@ -1,72 +1,36 @@
 import { STORAGE_KEYS } from '../config.js';
 import { validateTransaction } from '../utils.js';
-import { postgresStorage } from './postgres-storage.js';
-import { indexedDBStorage } from './indexed-db-storage.js';
 
 /**
  * StorageManager class to handle all data storage operations
- * Provides fallback mechanisms and offline support
+ * Uses localStorage for GitHub Pages deployment
  */
 class StorageManager {
     constructor() {
-        this.primaryStorage = null;
-        this.backupStorage = null;
         this.initializeStorage();
     }
 
-    async initializeStorage() {
-        try {
-            // Try PostgreSQL first (for authenticated users)
-            if (await postgresStorage.isAvailable()) {
-                this.primaryStorage = postgresStorage;
-                this.backupStorage = indexedDBStorage;
-            } else {
-                // Fallback to IndexedDB for offline/unauthenticated use
-                this.primaryStorage = indexedDBStorage;
-                this.backupStorage = {
-                    async getTransactions() {
-                        return JSON.parse(localStorage.getItem(STORAGE_KEYS.transactions)) || [];
-                    },
-                    async setTransactions(transactions) {
-                        localStorage.setItem(STORAGE_KEYS.transactions, JSON.stringify(transactions));
-                    }
-                };
-            }
-
-            // Initialize if empty
-            const transactions = await this.primaryStorage.getTransactions();
-            if (!transactions || transactions.length === 0) {
-                await this.primaryStorage.setTransactions([]);
-            }
-
-            // Initialize settings
-            if (!localStorage.getItem(STORAGE_KEYS.settings)) {
-                localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify({
-                    monthlyBudget: 0,
-                    theme: 'light',
-                    currency: 'ALL',
-                    notifications: true
-                }));
-            }
-        } catch (error) {
-            console.error('Storage initialization error:', error);
-            // Fallback to localStorage if everything else fails
-            this.primaryStorage = this.backupStorage;
+    initializeStorage() {
+        // Initialize storage with default values if empty
+        if (!localStorage.getItem(STORAGE_KEYS.transactions)) {
+            localStorage.setItem(STORAGE_KEYS.transactions, JSON.stringify([]));
+        }
+        if (!localStorage.getItem(STORAGE_KEYS.settings)) {
+            localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify({
+                monthlyBudget: 0,
+                theme: 'light',
+                currency: 'ALL',
+                notifications: true
+            }));
         }
     }
 
     async getTransactions() {
         try {
-            return await this.primaryStorage.getTransactions();
+            return JSON.parse(localStorage.getItem(STORAGE_KEYS.transactions)) || [];
         } catch (error) {
             console.error('Error reading transactions:', error);
-            // Try backup storage
-            try {
-                return await this.backupStorage.getTransactions();
-            } catch (backupError) {
-                console.error('Backup storage error:', backupError);
-                return [];
-            }
+            return [];
         }
     }
 
@@ -89,14 +53,7 @@ class StorageManager {
             };
 
             transactions.push(newTransaction);
-            await this.primaryStorage.setTransactions(transactions);
-            
-            // Backup
-            try {
-                await this.backupStorage.setTransactions(transactions);
-            } catch (backupError) {
-                console.error('Backup storage error:', backupError);
-            }
+            localStorage.setItem(STORAGE_KEYS.transactions, JSON.stringify(transactions));
 
             return {
                 success: true,
@@ -138,14 +95,7 @@ class StorageManager {
                 lastModified: new Date().toISOString()
             };
 
-            await this.primaryStorage.setTransactions(transactions);
-            
-            // Backup
-            try {
-                await this.backupStorage.setTransactions(transactions);
-            } catch (backupError) {
-                console.error('Backup storage error:', backupError);
-            }
+            localStorage.setItem(STORAGE_KEYS.transactions, JSON.stringify(transactions));
 
             return {
                 success: true,
@@ -172,14 +122,7 @@ class StorageManager {
                 };
             }
 
-            await this.primaryStorage.setTransactions(filteredTransactions);
-            
-            // Backup
-            try {
-                await this.backupStorage.setTransactions(filteredTransactions);
-            } catch (backupError) {
-                console.error('Backup storage error:', backupError);
-            }
+            localStorage.setItem(STORAGE_KEYS.transactions, JSON.stringify(filteredTransactions));
 
             return {
                 success: true,
@@ -208,17 +151,10 @@ class StorageManager {
             const currentSettings = this.getSettings();
             const updatedSettings = { ...currentSettings, ...settings };
             localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(updatedSettings));
-
-            return {
-                success: true,
-                message: 'Settings updated successfully'
-            };
+            return { success: true, message: 'Settings updated successfully' };
         } catch (error) {
             console.error('Error updating settings:', error);
-            return {
-                success: false,
-                message: 'Failed to update settings'
-            };
+            return { success: false, message: 'Failed to update settings' };
         }
     }
 
@@ -244,17 +180,10 @@ class StorageManager {
                 throw new Error('Invalid transactions data');
             }
 
-            await this.primaryStorage.setTransactions(data.transactions);
+            localStorage.setItem(STORAGE_KEYS.transactions, JSON.stringify(data.transactions));
             
             if (data.settings) {
                 localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify(data.settings));
-            }
-
-            // Backup
-            try {
-                await this.backupStorage.setTransactions(data.transactions);
-            } catch (backupError) {
-                console.error('Backup storage error:', backupError);
             }
 
             return {
@@ -272,21 +201,13 @@ class StorageManager {
 
     async clearData() {
         try {
-            await this.primaryStorage.setTransactions([]);
-            localStorage.clear();
+            localStorage.setItem(STORAGE_KEYS.transactions, JSON.stringify([]));
             localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify({
                 monthlyBudget: 0,
                 theme: 'light',
                 currency: 'ALL',
                 notifications: true
             }));
-
-            // Clear backup
-            try {
-                await this.backupStorage.setTransactions([]);
-            } catch (backupError) {
-                console.error('Backup storage error:', backupError);
-            }
 
             return {
                 success: true,
