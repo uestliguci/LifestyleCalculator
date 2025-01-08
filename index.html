@@ -12,11 +12,13 @@
             const isLocal = window.location.hostname === 'localhost' || 
                           window.location.hostname === '127.0.0.1' ||
                           window.location.protocol === 'file:';
-            return isLocal ? path : `/LifestyleCalculator${path}`;
+            // Remove leading ./ or / from path
+            const cleanPath = path.replace(/^[./]+/, '');
+            return isLocal ? path : `/LifestyleCalculator/${cleanPath}`;
         };
     </script>
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <link rel="manifest" href="manifest.json" onload="this.href = getAssetPath(this.getAttribute('href'))">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png" onload="this.href = getAssetPath(this.getAttribute('href'))">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -37,7 +39,7 @@
     <!-- Login Overlay -->
     <div class="login-overlay" id="login-overlay">
         <div class="login-card">
-            <h2>Private Login</h2>
+            <h2>Login</h2>
             <form id="login-form" class="login-form">
                 <div class="form-group">
                     <label for="username">Username</label>
@@ -268,7 +270,9 @@
             const isLocal = window.location.hostname === 'localhost' || 
                           window.location.hostname === '127.0.0.1' ||
                           window.location.protocol === 'file:';
-            return isLocal ? path : `/LifestyleCalculator${path}`;
+            // Remove leading ./ or / from path
+            const cleanPath = path.replace(/^[./]+/, '');
+            return isLocal ? path : `/LifestyleCalculator/${cleanPath}`;
         };
 
         // Initialize chart manager
