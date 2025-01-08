@@ -1,6 +1,6 @@
 import { localStorageManager } from './local-storage-manager.js';
 // jsPDF is loaded globally
-const jsPDF = window.jspdf;
+const { jsPDF } = window.jspdf;
 
 /**
  * Exports transaction data to a professionally formatted PDF document
@@ -39,7 +39,9 @@ export async function exportToPDF() {
         const doc = new jsPDF({
             orientation: 'portrait',
             unit: 'mm',
-            format: 'a4'
+            format: 'a4',
+            putOnlyUsedFonts: true,
+            floatPrecision: 16
         });
 
         // Add header

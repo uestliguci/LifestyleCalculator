@@ -24,15 +24,11 @@ class UIManager {
         this.refreshCurrentSection();
     }
 
-    /**
-     * Get chart manager instance
-     */
     async getChartManager() {
         if (!this.chartManager) {
-            // Wait for Chart.js and chart manager to be initialized
             await new Promise((resolve, reject) => {
                 let attempts = 0;
-                const maxAttempts = 50; // 5 seconds max
+                const maxAttempts = 50;
 
                 const checkDependencies = () => {
                     attempts++;
@@ -40,7 +36,7 @@ class UIManager {
                         this.chartManager = window.chartManager;
                         resolve();
                     } else if (attempts >= maxAttempts) {
-                        reject(new Error('Failed to initialize chart manager: dependencies not available'));
+                        reject(new Error('Failed to initialize chart manager'));
                     } else {
                         setTimeout(checkDependencies, 100);
                     }
@@ -55,9 +51,6 @@ class UIManager {
         console.log('Storage system initialized successfully');
     }
 
-    /**
-     * Initialize all event listeners
-     */
     initializeEventListeners() {
         // Tab Bar Navigation
         document.querySelectorAll('.tab-item').forEach(btn => {
@@ -105,33 +98,25 @@ class UIManager {
                     const chartId = chartSection.querySelector('canvas').id;
                     const title = chartSection.querySelector('h4').textContent;
                     try {
-                        // Ensure chart manager is initialized
                         const chartManager = await this.getChartManager();
-                        
-                        // Get chart instance
                         const chart = chartManager.charts.get(chartId);
                         if (!chart) {
-                            throw new Error('Chart not found. Try switching to a different period and back.');
+                            throw new Error('Chart not found');
                         }
-
-                        // Export chart
                         await chartManager.exportChartAsPDF(chartId, title);
                         this.showAlert('Chart exported successfully', 'success');
                     } catch (error) {
                         console.error('Chart export error:', error);
-                        this.showAlert(error.message || 'Failed to export chart. Please try again.', 'error');
+                        this.showAlert(error.message || 'Failed to export chart', 'error');
                     }
                 }
             });
         });
 
-        // Initialize swipe actions for transactions
+        // Initialize swipe actions
         this.setupSwipeActions();
     }
 
-    /**
-     * Check budget alerts based on transaction
-     */
     async checkBudgetAlerts(transaction) {
         if (transaction.type !== 'expense') return;
 
@@ -144,15 +129,11 @@ class UIManager {
             new Date(t.date) >= monthStart && t.type === 'expense'
         );
 
-        // Calculate total monthly expenses
         const totalExpenses = monthlyTransactions.reduce((sum, t) => sum + parseFloat(t.amount), 0);
-
-        // Check category-specific budget alerts
         const categoryExpenses = monthlyTransactions
             .filter(t => t.category === transaction.category)
             .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
-        // Check alerts
         for (const alert of BUDGET_ALERTS) {
             if (alert.type === 'total' && totalExpenses >= alert.threshold) {
                 this.showAlert(`Monthly expenses have exceeded ${formatCurrency(alert.threshold)}`, 'warning');
@@ -164,9 +145,6 @@ class UIManager {
         }
     }
 
-    /**
-     * Update category options based on transaction type
-     */
     updateCategoryOptions(type) {
         const categorySelect = document.getElementById('category');
         if (!categorySelect) return;
@@ -177,18 +155,12 @@ class UIManager {
         ).join('');
     }
 
-    /**
-     * Switch between different sections
-     */
     async switchSection(sectionId) {
-        // Update tab bar buttons
         document.querySelectorAll('.tab-item').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.menu === sectionId);
         });
 
-        // Update sections with slide animation
-        const sections = document.querySelectorAll('.menu-section');
-        sections.forEach(section => {
+        document.querySelectorAll('.menu-section').forEach(section => {
             if (section.id === sectionId) {
                 section.style.display = 'block';
                 setTimeout(() => section.classList.add('active'), 50);
@@ -204,7 +176,6 @@ class UIManager {
 
         this.currentSection = sectionId;
 
-        // Update section title
         const sectionTitle = document.querySelector('.section-title');
         if (sectionTitle) {
             sectionTitle.textContent = sectionId.charAt(0).toUpperCase() + sectionId.slice(1);
@@ -234,18 +205,13 @@ class UIManager {
                 startX = e.touches[0].clientX;
                 currentX = startX;
                 item.style.transition = '';
-                
-                // Reset other items
                 resetAllItems(item);
             };
 
             const handleTouchMove = (e) => {
                 if (!startX) return;
-                
                 currentX = e.touches[0].clientX;
                 const diff = currentX - startX;
-                
-                // Only allow swipe left and limit the swipe distance
                 if (diff < 0 && diff > -120) {
                     item.style.transform = `translateX(${diff}px)`;
                     activeItem = item;
@@ -254,9 +220,7 @@ class UIManager {
 
             const handleTouchEnd = () => {
                 if (!startX) return;
-                
                 item.style.transition = 'transform 0.3s ease';
-                
                 if (startX - currentX > threshold) {
                     item.style.transform = 'translateX(-120px)';
                     item.classList.add('swiped');
@@ -264,7 +228,6 @@ class UIManager {
                     item.style.transform = '';
                     item.classList.remove('swiped');
                 }
-                
                 startX = null;
                 currentX = null;
             };
@@ -275,7 +238,6 @@ class UIManager {
             item.addEventListener('touchcancel', handleTouchEnd);
         });
 
-        // Close active swipe when tapping outside
         document.addEventListener('touchstart', (e) => {
             if (activeItem && !activeItem.contains(e.target)) {
                 resetAllItems();
@@ -284,9 +246,6 @@ class UIManager {
         });
     }
 
-    /**
-     * Refresh the current section's data and charts
-     */
     async refreshCurrentSection() {
         try {
             await this.updateBalanceIndicator();
@@ -304,22 +263,17 @@ class UIManager {
             }
         } catch (error) {
             console.error('Section refresh error:', error);
-            this.showAlert('Failed to refresh section. Please try again.', 'error');
+            this.showAlert('Failed to refresh section', 'error');
         }
     }
 
-    /**
-     * Handle transaction form submission
-     */
     async handleTransactionSubmit(e) {
         e.preventDefault();
         
         try {
             const form = e.target;
             const now = new Date();
-            const isoString = now.toISOString();
-            const formattedDate = isoString.replace(/\.\d+/, '.000');
-            const transactionId = now.getTime().toString(36);
+            const formattedDate = now.toISOString().replace(/\.\d+/, '.000');
             
             const transaction = {
                 type: form.querySelector('#transaction-type').value,
@@ -328,7 +282,7 @@ class UIManager {
                 description: form.querySelector('#description').value || '',
                 date: formattedDate,
                 timestamp: formattedDate,
-                id: transactionId
+                id: now.getTime().toString(36)
             };
 
             console.log('Submitting transaction:', transaction);
@@ -339,25 +293,17 @@ class UIManager {
                 form.reset();
                 await this.updateBalanceIndicator();
                 await this.checkBudgetAlerts(transaction);
+                document.getElementById('add-transaction-modal').style.display = 'none';
             } else {
-                if (result.errors) {
-                    console.error('Validation errors:', result.errors);
-                    const errorMessages = Object.values(result.errors).join(', ');
-                    this.showAlert(`Validation errors: ${errorMessages}`, 'error');
-                } else {
-                    console.error('Transaction error:', result.message);
-                    this.showAlert(result.message, 'error');
-                }
+                const errorMessages = result.errors ? Object.values(result.errors).join(', ') : result.message;
+                this.showAlert(`Failed to add transaction: ${errorMessages}`, 'error');
             }
         } catch (error) {
             console.error('Transaction submission error:', error);
-            this.showAlert('Failed to add transaction. Please try again.', 'error');
+            this.showAlert('Failed to add transaction', 'error');
         }
     }
 
-    /**
-     * Filter transactions based on search input
-     */
     async filterTransactions(query) {
         const transactions = await localStorageManager.getTransactions();
         const filtered = transactions.filter(t => 
@@ -368,15 +314,11 @@ class UIManager {
         this.renderTransactionList(filtered);
     }
 
-    /**
-     * Update monthly analytics charts and summaries
-     */
     async updateAnalytics(period = 'week') {
         const transactions = await localStorageManager.getTransactions();
         const now = new Date();
         let startDate;
 
-        // Calculate start date based on period
         switch (period) {
             case 'week':
                 startDate = new Date(now.setDate(now.getDate() - 7));
@@ -389,10 +331,7 @@ class UIManager {
                 break;
         }
 
-        // Filter transactions for current period
         const currentPeriodTransactions = transactions.filter(t => new Date(t.date) >= startDate);
-
-        // Calculate previous period for comparison
         const previousStartDate = new Date(startDate);
         switch (period) {
             case 'week':
@@ -410,11 +349,9 @@ class UIManager {
             new Date(t.date) >= previousStartDate && new Date(t.date) < startDate
         );
 
-        // Calculate statistics
         const currentStats = this.calculatePeriodStats(currentPeriodTransactions);
         const previousStats = this.calculatePeriodStats(previousPeriodTransactions);
 
-        // Update analytics cards
         const cards = document.querySelector('.analytics-cards');
         if (cards) {
             cards.innerHTML = `
@@ -442,17 +379,15 @@ class UIManager {
             `;
         }
 
-        // Update charts
         try {
             const chartManager = await this.getChartManager();
             await chartManager.updateCategoryChart('category-chart', currentPeriodTransactions);
             await chartManager.updateTrendChart('trend-chart', currentPeriodTransactions, period);
         } catch (error) {
             console.error('Failed to update charts:', error);
-            this.showAlert('Failed to update charts. Please try again.', 'error');
+            this.showAlert('Failed to update charts', 'error');
         }
 
-        // Update category legend
         const categoryLegend = document.getElementById('category-legend');
         if (categoryLegend) {
             const categoryTotals = currentPeriodTransactions
@@ -477,7 +412,6 @@ class UIManager {
             `).join('');
         }
 
-        // Update spending summary
         const avgSpending = document.getElementById('avg-daily-spending');
         const maxSpendingDay = document.getElementById('max-spending-day');
         
@@ -503,7 +437,6 @@ class UIManager {
                 '-';
         }
 
-        // Update period selector
         document.querySelectorAll('.period-btn').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.period === period);
         });
@@ -538,23 +471,6 @@ class UIManager {
         return `${sign}${percentage.toFixed(1)}% from last period`;
     }
 
-    /**
-     * Update spending visualization charts
-     */
-    async updateVisualization(viewType = 'daily') {
-        const transactions = await localStorageManager.getTransactions();
-        try {
-            const chartManager = await this.getChartManager();
-            await chartManager.updateTrendChart('spending-chart', transactions, viewType);
-        } catch (error) {
-            console.error('Failed to update visualization:', error);
-            this.showAlert('Failed to update visualization. Please try again.', 'error');
-        }
-    }
-
-    /**
-     * Update balance indicator with current total
-     */
     async updateBalanceIndicator() {
         const transactions = await localStorageManager.getTransactions();
         const balance = transactions.reduce((total, t) => 
@@ -569,16 +485,17 @@ class UIManager {
     }
 
     /**
-     * Update balance sheet charts
+     * Clear all data
      */
-    async updateBalanceSheet(year = new Date().getFullYear().toString()) {
-        const transactions = (await localStorageManager.getTransactions()).filter(t => 
-            t.date.startsWith(year)
-        );
-
-        const chartManager = await this.getChartManager();
-        await chartManager.updateBalanceChart('balance-overview-chart', transactions);
-        await chartManager.updateSavingsChart('savings-chart', transactions);
+    async clearData() {
+        try {
+            await localStorageManager.clearData();
+            this.showAlert('All data cleared successfully', 'success');
+            await this.refreshCurrentSection();
+        } catch (error) {
+            console.error('Failed to clear data:', error);
+            this.showAlert('Failed to clear data', 'error');
+        }
     }
 
     /**
@@ -592,72 +509,6 @@ class UIManager {
             console.error('Export error:', error);
             this.showAlert('Failed to export bank statement', 'error');
         }
-    }
-
-    /**
-     * Render settings section
-     */
-    renderSettings() {
-        const settingsList = document.querySelector('.settings-list');
-        if (settingsList) {
-            settingsList.innerHTML = `
-                <div class="settings-item">
-                    <div class="settings-info">
-                        <h4>Export Data</h4>
-                        <p>Download your transaction history</p>
-                    </div>
-                    <button onclick="ui.exportData()" class="btn-primary">Export PDF</button>
-                </div>
-                <div class="settings-item">
-                    <div class="settings-info">
-                        <h4>Clear Data</h4>
-                        <p>Reset all data and start fresh</p>
-                    </div>
-                    <button onclick="localStorageManager.clearData()" class="btn-secondary">Clear Data</button>
-                </div>
-            `;
-        }
-    }
-
-    /**
-     * Add section transition styles
-     */
-    addSectionTransitionStyles() {
-        if (!document.getElementById('section-transition-styles')) {
-            const style = document.createElement('style');
-            style.id = 'section-transition-styles';
-            style.textContent = `
-                .menu-section {
-                    display: none;
-                    opacity: 0;
-                    transform: translateX(20px);
-                    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
-                }
-                
-                .menu-section.active {
-                    display: block;
-                    opacity: 1;
-                    transform: translateX(0);
-                }
-            `;
-            document.head.appendChild(style);
-        }
-    }
-
-    /**
-     * Show an alert message
-     */
-    showAlert(message, type = 'info') {
-        const alert = document.createElement('div');
-        alert.className = `alert alert-${type} show`;
-        alert.textContent = message;
-
-        document.querySelector('.app-content').prepend(alert);
-
-        setTimeout(() => {
-            alert.classList.remove('show');
-            setTimeout(() => alert.remove(), 300);
-        }, ANIMATION_DURATION.alert);
     }
 
     /**
@@ -685,7 +536,10 @@ class UIManager {
                     <div class="transaction-item" data-id="${t.id}">
                         <div class="transaction-info">
                             <div class="transaction-title">${t.category}</div>
-                            <div class="transaction-category">${t.description || 'No description'}</div>
+                            <div class="transaction-details">
+                                <span class="transaction-type ${t.type.toLowerCase()}">${t.type}</span>
+                                <span class="transaction-description">${t.description || 'No description'}</span>
+                            </div>
                         </div>
                         <div class="transaction-amount ${t.type.toLowerCase()}">
                             ${t.type === 'expense' ? '-' : '+'}${formatCurrency(t.amount)}
@@ -711,6 +565,66 @@ class UIManager {
 
         // Initialize swipe actions
         this.setupSwipeActions();
+    }
+
+    /**
+     * Render settings section
+     */
+    renderSettings() {
+        const settingsList = document.querySelector('.settings-list');
+        if (settingsList) {
+            settingsList.innerHTML = `
+                <div class="settings-item">
+                    <div class="settings-info">
+                        <h4>Export Data</h4>
+                        <p>Download your transaction history</p>
+                    </div>
+                    <button onclick="ui.exportData()" class="btn-primary">Export PDF</button>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-info">
+                        <h4>Clear Data</h4>
+                        <p>Reset all data and start fresh</p>
+                    </div>
+                    <button onclick="ui.clearData()" class="btn-secondary">Clear Data</button>
+                </div>
+            `;
+        }
+    }
+
+    addSectionTransitionStyles() {
+        if (!document.getElementById('section-transition-styles')) {
+            const style = document.createElement('style');
+            style.id = 'section-transition-styles';
+            style.textContent = `
+                .menu-section {
+                    display: none;
+                    opacity: 0;
+                    transform: translateX(20px);
+                    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+                }
+                
+                .menu-section.active {
+                    display: block;
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    showAlert(message, type = 'info') {
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type} show`;
+        alert.textContent = message;
+
+        document.querySelector('.app-content').prepend(alert);
+
+        setTimeout(() => {
+            alert.classList.remove('show');
+            setTimeout(() => alert.remove(), 300);
+        }, ANIMATION_DURATION.alert);
     }
 }
 
