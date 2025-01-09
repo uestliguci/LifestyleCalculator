@@ -58,43 +58,13 @@ body {
     margin: 0 auto;
 }
 
-/* iOS Header */
-.ios-header {
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    background: var(--background-color);
-    padding: 16px 16px 0;
-    margin: -16px -16px 0;
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom: 1px solid var(--border-color);
-}
-
-@supports (backdrop-filter: blur(10px)) {
-    .ios-header {
-        background: rgba(var(--background-color-rgb), 0.8);
-    }
-}
-
-.header-top {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 16px;
-}
-
-.header-top h1 {
-    font-size: 34px;
-    font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: -0.5px;
-}
-
 .header-actions {
     display: flex;
+    justify-content: flex-end;
     gap: 12px;
+    margin-bottom: 16px;
 }
+
 
 .action-button {
     width: 40px;
