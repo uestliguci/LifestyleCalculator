@@ -407,6 +407,47 @@ body {
 }
 
 /* Responsive Design */
+@media (max-width: 430px) {
+    /* Optimizations for iPhone 16 Pro Max and 14 Pro Max */
+    .action-button {
+        width: 48px;
+        height: 48px;
+        border-radius: 24px;
+    }
+
+    .btn-edit, .btn-delete {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+    }
+
+    .ios-searchbar {
+        margin: 12px 0;
+    }
+
+    .search-input {
+        height: 44px;
+        font-size: 16px;
+    }
+
+    .type-badge, .category-tag {
+        padding: 8px 14px;
+        font-size: 14px;
+    }
+
+    .settings-item {
+        padding: 16px;
+    }
+
+    .ios-form .ios-input,
+    .ios-form .ios-select,
+    .btn-primary,
+    .btn-secondary {
+        height: 48px;
+        font-size: 16px;
+    }
+}
+
 @media (max-width: 768px) {
     .ios-header {
         padding: 12px 12px 0;

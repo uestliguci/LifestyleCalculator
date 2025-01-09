@@ -185,10 +185,11 @@ class UIManager {
     }
 
     setupSwipeActions() {
-        const items = document.querySelectorAll('.transaction-item');
-        let startX, currentX;
+        const items = document.querySelectorAll('.table-row');
+        let startX, currentX, startY, currentY;
         const threshold = 50;
         let activeItem = null;
+        let isScrolling = false;
 
         const resetAllItems = (exceptItem = null) => {
             items.forEach(item => {
@@ -200,19 +201,55 @@ class UIManager {
             });
         };
 
+        // Add touch feedback to all interactive elements
+        const addTouchFeedback = () => {
+            const interactiveElements = document.querySelectorAll('.action-button, .btn-edit, .btn-delete, .type-badge, .category-tag, .amount-tag');
+            
+            interactiveElements.forEach(element => {
+                element.addEventListener('touchstart', () => {
+                    element.style.transform = 'scale(0.95)';
+                }, { passive: true });
+
+                element.addEventListener('touchend', () => {
+                    element.style.transform = '';
+                }, { passive: true });
+
+                element.addEventListener('touchcancel', () => {
+                    element.style.transform = '';
+                }, { passive: true });
+            });
+        };
+
         items.forEach(item => {
             const handleTouchStart = (e) => {
                 startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
                 currentX = startX;
+                currentY = startY;
                 item.style.transition = '';
                 resetAllItems(item);
+                isScrolling = undefined;
             };
 
             const handleTouchMove = (e) => {
                 if (!startX) return;
+                
                 currentX = e.touches[0].clientX;
+                currentY = e.touches[0].clientY;
+
+                // Determine scroll vs swipe on first move
+                if (isScrolling === undefined) {
+                    const diffX = Math.abs(startX - currentX);
+                    const diffY = Math.abs(startY - currentY);
+                    isScrolling = diffY > diffX;
+                }
+
+                // If scrolling vertically, don't handle swipe
+                if (isScrolling) return;
+
                 const diff = currentX - startX;
                 if (diff < 0 && diff > -120) {
+                    e.preventDefault(); // Prevent scrolling when swiping
                     item.style.transform = `translateX(${diff}px)`;
                     activeItem = item;
                 }
@@ -220,23 +257,37 @@ class UIManager {
 
             const handleTouchEnd = () => {
                 if (!startX) return;
+                
                 item.style.transition = 'transform 0.3s ease';
-                if (startX - currentX > threshold) {
+                
+                if (!isScrolling && startX - currentX > threshold) {
                     item.style.transform = 'translateX(-120px)';
                     item.classList.add('swiped');
+                    
+                    // Add haptic feedback if available
+                    if (window.navigator && window.navigator.vibrate) {
+                        window.navigator.vibrate(50);
+                    }
                 } else {
                     item.style.transform = '';
                     item.classList.remove('swiped');
                 }
+                
                 startX = null;
                 currentX = null;
+                startY = null;
+                currentY = null;
+                isScrolling = undefined;
             };
 
-            item.addEventListener('touchstart', handleTouchStart);
-            item.addEventListener('touchmove', handleTouchMove);
-            item.addEventListener('touchend', handleTouchEnd);
-            item.addEventListener('touchcancel', handleTouchEnd);
+            item.addEventListener('touchstart', handleTouchStart, { passive: true });
+            item.addEventListener('touchmove', handleTouchMove, { passive: false }); // non-passive to prevent scroll
+            item.addEventListener('touchend', handleTouchEnd, { passive: true });
+            item.addEventListener('touchcancel', handleTouchEnd, { passive: true });
         });
+
+        // Initialize touch feedback
+        addTouchFeedback();
 
         document.addEventListener('touchstart', (e) => {
             if (activeItem && !activeItem.contains(e.target)) {
