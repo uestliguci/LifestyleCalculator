@@ -17,11 +17,82 @@ class UIManager {
         // Set UI reference in balance manager
         balanceManager.setUI(this);
         
+        // Initialize dynamic island
+        this.dynamicIsland = document.getElementById('dynamic-island');
+        
+        // Load saved settings
+        this.loadSettings();
+        
         // Initialize event listeners after setup
         this.initializeEventListeners();
         
         // Initial section refresh
         this.refreshCurrentSection();
+        
+        // Show welcome message
+        this.showDynamicIsland('Welcome to Lifestyle Calculator!');
+    }
+
+    async loadSettings() {
+        const settings = localStorageManager.getSettings();
+        
+        // Apply theme
+        if (settings.theme) {
+            this.updateTheme(settings.theme, false);
+        }
+        
+        // Apply currency
+        if (settings.currency) {
+            this.updateCurrency(settings.currency, false);
+        }
+
+        // Apply notification settings
+        if ('notifications' in settings) {
+            this.toggleDynamicIsland(settings.notifications, false);
+        }
+
+        // Update settings UI
+        const themeSelect = document.querySelector('select[onchange="ui.updateTheme(this.value)"]');
+        if (themeSelect) {
+            themeSelect.value = settings.theme || 'system';
+        }
+
+        const currencySelect = document.querySelector('select[onchange="ui.updateCurrency(this.value)"]');
+        if (currencySelect) {
+            currencySelect.value = settings.currency || 'ALL';
+        }
+
+        const notificationToggle = document.querySelector('input[onchange="ui.toggleDynamicIsland(this.checked)"]');
+        if (notificationToggle) {
+            notificationToggle.checked = settings.notifications !== false;
+        }
+    }
+
+    showDynamicIsland(message, icon = null, duration = 3000) {
+        if (!this.dynamicIsland) return;
+
+        // Update message
+        const messageEl = this.dynamicIsland.querySelector('.message');
+        if (messageEl) messageEl.textContent = message;
+
+        // Update icon if provided
+        if (icon) {
+            const iconEl = this.dynamicIsland.querySelector('.icon svg');
+            if (iconEl) iconEl.innerHTML = icon;
+        }
+
+        // Show the dynamic island
+        this.dynamicIsland.classList.add('show');
+
+        // Add haptic feedback if available
+        if (window.navigator && window.navigator.vibrate) {
+            window.navigator.vibrate(50);
+        }
+
+        // Hide after duration
+        setTimeout(() => {
+            this.dynamicIsland.classList.remove('show');
+        }, duration);
     }
 
     async getChartManager() {
@@ -120,6 +191,9 @@ class UIManager {
     async checkBudgetAlerts(transaction) {
         if (transaction.type !== 'expense') return;
 
+        const settings = localStorageManager.getSettings();
+        if (settings.budgetAlerts === false) return;
+
         const monthStart = new Date();
         monthStart.setDate(1);
         monthStart.setHours(0, 0, 0, 0);
@@ -134,13 +208,33 @@ class UIManager {
             .filter(t => t.category === transaction.category)
             .reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
+        // Check monthly budget limit
+        if (settings.monthlyBudget && totalExpenses >= settings.monthlyBudget) {
+            this.showAlert(`Monthly expenses have exceeded ${formatCurrency(settings.monthlyBudget)}`, 'warning');
+            this.showDynamicIsland(
+                `Budget Alert: Monthly limit exceeded`,
+                '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>'
+            );
+        }
+
+        // Check category budget limit
+        const categoryBudget = settings.categoryBudgets?.[transaction.category];
+        if (categoryBudget && categoryExpenses >= categoryBudget) {
+            this.showAlert(`${transaction.category} expenses have exceeded ${formatCurrency(categoryBudget)}`, 'warning');
+            this.showDynamicIsland(
+                `Budget Alert: ${transaction.category} limit exceeded`,
+                '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>'
+            );
+        }
+
+        // Check predefined budget alerts
         for (const alert of BUDGET_ALERTS) {
             if (alert.type === 'total' && totalExpenses >= alert.threshold) {
-                this.showAlert(`Monthly expenses have exceeded ${formatCurrency(alert.threshold)}`, 'warning');
+                this.showAlert(alert.message, 'warning');
             } else if (alert.type === 'category' && 
                       alert.category === transaction.category && 
                       categoryExpenses >= alert.threshold) {
-                this.showAlert(`${transaction.category} expenses have exceeded ${formatCurrency(alert.threshold)}`, 'warning');
+                this.showAlert(alert.message, 'warning');
             }
         }
     }
@@ -345,6 +439,15 @@ class UIManager {
                 await this.updateBalanceIndicator();
                 await this.checkBudgetAlerts(transaction);
                 document.getElementById('add-transaction-modal').style.display = 'none';
+                
+                // Show dynamic island notification
+                const icon = transaction.type === 'income' ? 
+                    '<path d="M12 3v18M5 10l7-7 7 7"/>' : 
+                    '<path d="M12 21V3M5 14l7 7 7-7"/>';
+                this.showDynamicIsland(
+                    `${transaction.type === 'income' ? 'Income' : 'Expense'}: ${formatCurrency(transaction.amount)}`,
+                    icon
+                );
             } else {
                 const errorMessages = result.errors ? Object.values(result.errors).join(', ') : result.message;
                 this.showAlert(`Failed to add transaction: ${errorMessages}`, 'error');
@@ -542,6 +645,7 @@ class UIManager {
         try {
             await localStorageManager.clearData();
             this.showAlert('All data cleared successfully', 'success');
+            this.showDynamicIsland('All data has been cleared', '<path d="M18 6L6 18M6 6l12 12"/>');
             await this.refreshCurrentSection();
         } catch (error) {
             console.error('Failed to clear data:', error);
@@ -598,50 +702,6 @@ class UIManager {
         // Create the transactions view
         transactionsList.innerHTML = `
             <div class="transactions-container">
-                <div class="header-actions">
-                    <button class="action-button primary" onclick="document.getElementById('add-transaction-modal').style.display='flex'">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                    </button>
-                    <button class="action-button" onclick="ui.exportData()">
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7 10 12 15 17 10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                    </button>
-                </div>
-                <div class="balance-card">
-                    <div class="balance-header">
-                        <h2>Total Balance</h2>
-                        <span class="balance-amount ${balance >= 0 ? 'positive' : 'negative'}">
-                            ${formatCurrency(Math.abs(balance))}
-                        </span>
-                        <span class="balance-trend">
-                            ${balance >= 0 ? 'Available Balance' : 'Negative Balance'}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="ios-searchbar">
-                    <div class="search-wrapper">
-                        <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="11" cy="11" r="8"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                        <input type="text" id="search-transactions" placeholder="Search transactions" class="search-input">
-                        <button class="search-cancel">Cancel</button>
-                    </div>
-                </div>
-
-                <div class="swipe-hint">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
-                    </svg>
-                    <span>Swipe left to delete</span>
-                </div>
 
                 ${Object.entries(groupedTransactions).map(([date, dayTransactions]) => `
                     <div class="transaction-group">
@@ -729,22 +789,263 @@ class UIManager {
         const settingsList = document.querySelector('.settings-list');
         if (settingsList) {
             settingsList.innerHTML = `
-                <div class="settings-item">
-                    <div class="settings-info">
-                        <h4>Bank Statement</h4>
-                        <p>Download your transaction history as a professional bank statement</p>
+                <div class="settings-group">
+                    <h3>Preferences</h3>
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <h4>Currency</h4>
+                            <p>Change your preferred currency</p>
+                        </div>
+                        <select class="settings-select" onchange="ui.updateCurrency(this.value)">
+                            <option value="ALL">Albanian Lek (ALL)</option>
+                            <option value="USD">US Dollar (USD)</option>
+                            <option value="EUR">Euro (EUR)</option>
+                            <option value="GBP">British Pound (GBP)</option>
+                        </select>
                     </div>
-                    <button onclick="ui.exportData()" class="btn-primary">Download Statement</button>
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <h4>Theme</h4>
+                            <p>Choose your preferred appearance</p>
+                        </div>
+                        <select class="settings-select" onchange="ui.updateTheme(this.value)">
+                            <option value="system">System Default</option>
+                            <option value="light">Light Mode</option>
+                            <option value="dark">Dark Mode</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="settings-item">
-                    <div class="settings-info">
-                        <h4>Clear Data</h4>
-                        <p>Reset all data and start fresh</p>
+
+                <div class="settings-group">
+                    <h3>Notifications</h3>
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <h4>Budget Alerts</h4>
+                            <p>Set monthly spending limits and get notified</p>
+                        </div>
+                        <button onclick="ui.showBudgetSettings()" class="btn-secondary">Configure</button>
                     </div>
-                    <button onclick="ui.clearData()" class="btn-secondary">Clear Data</button>
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <h4>Dynamic Island</h4>
+                            <p>Show transaction notifications</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked onchange="ui.toggleDynamicIsland(this.checked)">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>Data Management</h3>
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <h4>Export Statement</h4>
+                            <p>Download your transaction history as PDF</p>
+                        </div>
+                        <button onclick="ui.exportData()" class="btn-primary">Export PDF</button>
+                    </div>
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <h4>Backup Data</h4>
+                            <p>Save your data to a file</p>
+                        </div>
+                        <button onclick="ui.backupData()" class="btn-secondary">Backup</button>
+                    </div>
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <h4>Restore Data</h4>
+                            <p>Restore from a backup file</p>
+                        </div>
+                        <button onclick="ui.restoreData()" class="btn-secondary">Restore</button>
+                    </div>
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <h4>Clear Data</h4>
+                            <p>Reset all data and start fresh</p>
+                        </div>
+                        <button onclick="ui.clearData()" class="btn-danger">Clear Data</button>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h3>About</h3>
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <h4>Version</h4>
+                            <p>Current version: 1.0.0</p>
+                        </div>
+                    </div>
+                    <div class="settings-item">
+                        <div class="settings-info">
+                            <h4>Support</h4>
+                            <p>Get help or report issues</p>
+                        </div>
+                        <button onclick="ui.showSupport()" class="btn-secondary">Contact</button>
+                    </div>
                 </div>
             `;
         }
+    }
+
+    updateCurrency(currency) {
+        // Update currency in local storage
+        localStorage.setItem('preferred_currency', currency);
+        this.showDynamicIsland('Currency updated', '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>');
+        this.refreshCurrentSection();
+    }
+
+    updateTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme_preference', theme);
+        this.showDynamicIsland('Theme updated', '<path d="M20 15.31L23.31 12 20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69z"/>');
+    }
+
+    toggleDynamicIsland(enabled) {
+        localStorage.setItem('dynamic_island_enabled', enabled);
+        if (enabled) {
+            this.showDynamicIsland('Notifications enabled', '<path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>');
+        } else {
+            this.showDynamicIsland('Notifications disabled', '<path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>');
+        }
+    }
+
+    async backupData() {
+        try {
+            const data = await localStorageManager.getAllData();
+            const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `lifestyle-calculator-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            this.showDynamicIsland('Backup created successfully', '<path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z"/>');
+        } catch (error) {
+            console.error('Backup error:', error);
+            this.showAlert('Failed to create backup', 'error');
+        }
+    }
+
+    async restoreData() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = async (e) => {
+            try {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    try {
+                        const data = JSON.parse(event.target.result);
+                        await localStorageManager.restoreData(data);
+                        this.showDynamicIsland('Data restored successfully', '<path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z"/>');
+                        this.refreshCurrentSection();
+                    } catch (error) {
+                        console.error('Restore error:', error);
+                        this.showAlert('Invalid backup file', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            } catch (error) {
+                console.error('File read error:', error);
+                this.showAlert('Failed to read backup file', 'error');
+            }
+        };
+        input.click();
+    }
+
+    showBudgetSettings() {
+        const settings = localStorageManager.getSettings();
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Budget Settings</h3>
+                    <button class="btn-close" onclick="this.closest('.modal').remove()">×</button>
+                </div>
+                <form class="ios-form" onsubmit="ui.saveBudgetSettings(event)">
+                    <div class="form-group">
+                        <label>Monthly Spending Limit</label>
+                        <input type="number" id="monthly-limit" class="ios-input" required min="0" step="0.01" 
+                               value="${settings.monthlyBudget || 0}">
+                    </div>
+                    <div class="form-group">
+                        <label>Category Limits</label>
+                        <div id="category-limits">
+                            ${Object.entries(CATEGORIES.expense || {}).map(([category]) => `
+                                <div class="category-budget-item">
+                                    <label>${category}</label>
+                                    <input type="number" name="category-${category}" 
+                                           class="ios-input" min="0" step="0.01"
+                                           value="${settings.categoryBudgets?.[category] || 0}">
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="budget-alerts" 
+                                   ${settings.budgetAlerts !== false ? 'checked' : ''}>
+                            Enable budget alerts
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Save Settings</button>
+                    </div>
+                </form>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    async saveBudgetSettings(event) {
+        event.preventDefault();
+        const form = event.target;
+        
+        try {
+            const settings = {
+                monthlyBudget: parseFloat(form.querySelector('#monthly-limit').value) || 0,
+                budgetAlerts: form.querySelector('#budget-alerts').checked,
+                categoryBudgets: {}
+            };
+
+            // Get category budgets
+            const categoryInputs = form.querySelectorAll('[name^="category-"]');
+            categoryInputs.forEach(input => {
+                const category = input.name.replace('category-', '');
+                settings.categoryBudgets[category] = parseFloat(input.value) || 0;
+            });
+
+            await localStorageManager.updateBudgetSettings(settings);
+            this.showDynamicIsland('Budget settings updated', '<path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>');
+            form.closest('.modal').remove();
+        } catch (error) {
+            console.error('Error saving budget settings:', error);
+            this.showAlert('Failed to save budget settings', 'error');
+        }
+    }
+
+    showSupport() {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Support</h3>
+                    <button class="btn-close" onclick="this.closest('.modal').remove()">×</button>
+                </div>
+                <div class="modal-message">
+                    <p>For support or to report issues, please contact:</p>
+                    <p><a href="mailto:support@example.com">support@example.com</a></p>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
     }
 
     addSectionTransitionStyles() {

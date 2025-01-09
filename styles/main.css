@@ -48,7 +48,7 @@ body {
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     padding-top: calc(env(safe-area-inset-top));
-    padding-bottom: calc(60px + env(safe-area-inset-bottom));
+    padding-bottom: calc(40px + env(safe-area-inset-bottom));
 }
 
 /* Transaction List */
@@ -607,11 +607,23 @@ body {
     margin: 0 auto;
 }
 
+.settings-group {
+    margin-bottom: 32px;
+}
+
+.settings-group h3 {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 16px;
+    padding: 0 4px;
+}
+
 .settings-item {
     background: var(--surface-color);
-    padding: 20px;
+    padding: 16px;
     border-radius: 16px;
-    margin-bottom: 16px;
+    margin-bottom: 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -633,6 +645,149 @@ body {
 .settings-info p {
     font-size: 15px;
     color: var(--text-secondary);
+}
+
+/* Settings Select */
+.settings-select {
+    background: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 8px 32px 8px 12px;
+    font-size: 15px;
+    color: var(--text-primary);
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg width='12' height='8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 8L0 0h12z' fill='%238E8E93'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 51px;
+    height: 31px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--border-color);
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 27px;
+    width: 27px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+    box-shadow: var(--shadow-sm);
+}
+
+input:checked + .toggle-slider {
+    background-color: var(--primary-color);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(20px);
+}
+
+/* Settings Buttons */
+.btn-danger {
+    background: var(--danger-color);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.btn-danger:active {
+    opacity: 0.9;
+    transform: scale(0.96);
+}
+
+/* Budget Settings */
+.category-budget-item {
+    margin-bottom: 12px;
+    padding: 12px;
+    background: var(--background-color);
+    border-radius: 10px;
+}
+
+.category-budget-item label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    border-radius: 6px;
+    border: 2px solid var(--border-color);
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+    cursor: pointer;
+    position: relative;
+}
+
+.checkbox-label input[type="checkbox"]:checked {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+}
+
+.checkbox-label input[type="checkbox"]:checked::after {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 4px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+/* Dark mode support for budget settings */
+@media (prefers-color-scheme: dark) {
+    .category-budget-item {
+        background: var(--surface-color-dark);
+    }
+
+    .checkbox-label input[type="checkbox"] {
+        border-color: var(--border-color-dark);
+    }
 }
 
 /* iOS Form Styles */
@@ -801,8 +956,55 @@ body {
     border-top: 1px solid var(--border-color);
 }
 
-/* Dark mode support for modals */
+/* Dynamic Island */
+.dynamic-island {
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 10px);
+    left: 50%;
+    transform: translateX(-50%) scale(0.95);
+    background: var(--surface-color);
+    color: var(--text-primary);
+    padding: 12px 24px;
+    border-radius: 32px;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 90%;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.dynamic-island.show {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+}
+
+.dynamic-island .icon {
+    margin-right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dynamic-island .message {
+    font-size: 15px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Dark mode support for modals and dynamic island */
 @media (prefers-color-scheme: dark) {
+    .dynamic-island {
+        background: rgba(28, 28, 30, 0.9);
+        color: var(--text-primary-dark);
+    }
+
     .modal-content {
         background: var(--surface-color-dark);
     }

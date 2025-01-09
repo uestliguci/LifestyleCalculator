@@ -141,17 +141,57 @@ class LocalStorageManager {
         }
     }
 
-    async exportData() {
+    async getAllData() {
         try {
-            const data = {
+            return {
                 transactions: await this.getTransactions(),
                 settings: this.getSettings(),
                 exportDate: new Date().toISOString()
             };
-            return JSON.stringify(data, null, 2);
         } catch (error) {
-            console.error('Error exporting data:', error);
-            return null;
+            console.error('Error getting all data:', error);
+            throw error;
+        }
+    }
+
+    async restoreData(data) {
+        try {
+            if (!data.transactions || !Array.isArray(data.transactions)) {
+                throw new Error('Invalid transactions data');
+            }
+
+            // Validate transactions
+            const validTransactions = data.transactions.every(t => 
+                t.id && t.type && t.amount && t.category && t.date
+            );
+
+            if (!validTransactions) {
+                throw new Error('Invalid transaction format');
+            }
+
+            // Validate settings
+            if (data.settings) {
+                const requiredSettings = ['monthlyBudget', 'theme', 'currency', 'notifications'];
+                const hasAllSettings = requiredSettings.every(key => key in data.settings);
+                if (!hasAllSettings) {
+                    throw new Error('Invalid settings format');
+                }
+            }
+
+            // Save data
+            await this.clearData();
+            localStorage.setItem(this.STORAGE_KEYS.transactions, JSON.stringify(data.transactions));
+            if (data.settings) {
+                localStorage.setItem(this.STORAGE_KEYS.settings, JSON.stringify(data.settings));
+            }
+
+            return {
+                success: true,
+                message: 'Data restored successfully'
+            };
+        } catch (error) {
+            console.error('Error restoring data:', error);
+            throw error;
         }
     }
 
@@ -179,6 +219,23 @@ class LocalStorageManager {
                 success: false,
                 message: 'Failed to import data: ' + error.message
             };
+        }
+    }
+
+    async updateBudgetSettings(settings) {
+        try {
+            const currentSettings = this.getSettings();
+            const updatedSettings = {
+                ...currentSettings,
+                monthlyBudget: settings.monthlyBudget || 0,
+                categoryBudgets: settings.categoryBudgets || {},
+                budgetAlerts: settings.budgetAlerts || true
+            };
+            localStorage.setItem(this.STORAGE_KEYS.settings, JSON.stringify(updatedSettings));
+            return { success: true, message: 'Budget settings updated successfully' };
+        } catch (error) {
+            console.error('Error updating budget settings:', error);
+            return { success: false, message: 'Failed to update budget settings' };
         }
     }
 
