@@ -565,7 +565,9 @@ class UIManager {
                         </button>
                     </div>
                 </div>
+            </div>
 
+            <div class="transactions-container">
                 <div class="balance-card">
                     <div class="balance-header">
                         <h2>Total Balance</h2>
@@ -577,9 +579,7 @@ class UIManager {
                         </span>
                     </div>
                 </div>
-            </div>
 
-            <div class="transactions-container">
                 <div class="ios-searchbar">
                     <div class="search-wrapper">
                         <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

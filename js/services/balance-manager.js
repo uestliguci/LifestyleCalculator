@@ -66,10 +66,17 @@ export class BalanceManager {
 
     showEditModal(transactionId) {
         const transaction = this.transactions.find(t => t.id === transactionId);
-        if (!transaction) return;
+        if (!transaction) {
+            console.error('Transaction not found:', transactionId);
+            if (this.ui) {
+                this.ui.showAlert('Transaction not found', 'error');
+            }
+            return;
+        }
 
         const modal = document.createElement('div');
         modal.className = 'modal';
+        modal.id = 'edit-transaction-modal';
         modal.style.display = 'flex';
         modal.innerHTML = `
             <div class="modal-content">
@@ -77,29 +84,32 @@ export class BalanceManager {
                     <h3>Edit Transaction</h3>
                     <button class="btn-close" onclick="this.closest('.modal').remove()">×</button>
                 </div>
-                <form id="edit-transaction-form">
+                <form id="edit-transaction-form" class="ios-form">
                     <div class="form-group">
-                        <label for="edit-type">Type</label>
-                        <select id="edit-type" required>
+                        <label for="edit-type">Transaction Type</label>
+                        <select id="edit-type" class="ios-select" required>
                             <option value="expense" ${transaction.type === 'expense' ? 'selected' : ''}>Expense</option>
                             <option value="income" ${transaction.type === 'income' ? 'selected' : ''}>Income</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="edit-amount">Amount</label>
-                        <input type="number" id="edit-amount" value="${transaction.amount}" step="0.01" min="0" required>
+                        <label for="edit-amount">Amount (Lek)</label>
+                        <input type="number" id="edit-amount" class="ios-input" value="${transaction.amount}" step="0.01" min="0" required>
                     </div>
                     <div class="form-group">
                         <label for="edit-category">Category</label>
-                        <select id="edit-category" required>
+                        <select id="edit-category" class="ios-select" required>
                             ${this.getCategoryOptions(transaction.type, transaction.category)}
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="edit-description">Description</label>
-                        <input type="text" id="edit-description" value="${transaction.description || ''}">
+                        <label for="edit-description">Description (Optional)</label>
+                        <input type="text" id="edit-description" class="ios-input" value="${transaction.description || ''}" placeholder="Add a note">
                     </div>
-                    <button type="submit" class="btn-primary">Save Changes</button>
+                    <div class="form-actions">
+                        <button type="button" class="btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+                        <button type="submit" class="btn-primary">Save Changes</button>
+                    </div>
                 </form>
             </div>
         `;
@@ -113,20 +123,46 @@ export class BalanceManager {
             categorySelect.innerHTML = this.getCategoryOptions(typeSelect.value);
         });
 
+        // Handle form submission
         const form = modal.querySelector('#edit-transaction-form');
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+
             const updatedTransaction = {
                 ...transaction,
                 type: form.querySelector('#edit-type').value,
                 amount: parseFloat(form.querySelector('#edit-amount').value),
                 category: form.querySelector('#edit-category').value,
-                description: form.querySelector('#edit-description').value
+                description: form.querySelector('#edit-description').value,
+                lastModified: new Date().toISOString()
             };
 
-            if (await this.editTransaction(updatedTransaction)) {
-                modal.remove();
+            try {
+                const success = await this.editTransaction(updatedTransaction);
+                if (success) {
+                    modal.remove();
+                    if (this.ui) {
+                        this.ui.showAlert('Transaction updated successfully', 'success');
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to update transaction:', error);
+                if (this.ui) {
+                    this.ui.showAlert('Failed to update transaction', 'error');
+                }
             }
+        });
+
+        // Add iOS-style form validation
+        const inputs = form.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.addEventListener('invalid', (e) => {
+                e.preventDefault();
+                input.classList.add('invalid');
+            });
+            input.addEventListener('input', () => {
+                input.classList.remove('invalid');
+            });
         });
     }
 

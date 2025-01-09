@@ -624,14 +624,73 @@ body {
     color: var(--text-secondary);
 }
 
+/* iOS Form Styles */
+.ios-form {
+    padding: 16px;
+}
+
+.ios-form .form-group {
+    margin-bottom: 20px;
+}
+
+.ios-form label {
+    display: block;
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.ios-form .ios-input,
+.ios-form .ios-select {
+    width: 100%;
+    height: 44px;
+    padding: 0 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    font-size: 16px;
+    color: var(--text-primary);
+    background: var(--surface-color);
+    transition: all 0.2s ease;
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.ios-form .ios-select {
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg width='12' height='8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M6 8L0 0h12z' fill='%238E8E93'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    padding-right: 40px;
+}
+
+.ios-form .ios-input:focus,
+.ios-form .ios-select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(0, 122, 255, 0.1);
+}
+
+.ios-form .ios-input.invalid,
+.ios-form .ios-select.invalid {
+    border-color: var(--danger-color);
+    background-color: var(--danger-bg);
+}
+
+.ios-form .form-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
 .btn-primary, .btn-secondary {
-    padding: 10px 20px;
+    padding: 12px 24px;
     border-radius: 10px;
     font-weight: 600;
-    font-size: 15px;
+    font-size: 16px;
     border: none;
     cursor: pointer;
     transition: all 0.2s ease;
+    flex: 1;
 }
 
 .btn-primary {
@@ -640,11 +699,128 @@ body {
 }
 
 .btn-secondary {
-    background: var(--danger-bg);
-    color: var(--danger-color);
+    background: var(--background-color);
+    color: var(--primary-color);
+    border: 1px solid var(--border-color);
 }
 
-.btn-primary:active, .btn-secondary:active {
-    transform: scale(0.95);
+.btn-danger {
+    background: var(--danger-color);
+    color: white;
+}
+
+.btn-primary:active,
+.btn-secondary:active,
+.btn-danger:active {
+    transform: scale(0.96);
     opacity: 0.9;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 16px;
+}
+
+.modal-content {
+    background: var(--surface-color);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+}
+
+.modal-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.btn-close {
+    width: 30px;
+    height: 30px;
+    border: none;
+    background: none;
+    font-size: 24px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+    transition: all 0.2s ease;
+}
+
+.btn-close:active {
+    background: var(--background-color);
+    transform: scale(0.9);
+}
+
+.modal-message {
+    padding: 20px;
+    text-align: center;
+    color: var(--text-primary);
+    font-size: 16px;
+}
+
+.modal-actions {
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Dark mode support for modals */
+@media (prefers-color-scheme: dark) {
+    .modal-content {
+        background: var(--surface-color-dark);
+    }
+
+    .modal-header {
+        border-bottom-color: var(--border-color-dark);
+    }
+
+    .modal-actions {
+        border-top-color: var(--border-color-dark);
+    }
+
+    .ios-form .ios-input,
+    .ios-form .ios-select {
+        background-color: var(--surface-color-dark);
+        border-color: var(--border-color-dark);
+        color: var(--text-primary-dark);
+    }
+
+    .ios-form label {
+        color: var(--text-primary-dark);
+    }
+
+    .btn-secondary {
+        background: var(--surface-color-dark);
+        border-color: var(--border-color-dark);
+    }
+
+    .btn-close:active {
+        background: var(--background-color-dark);
+    }
 }
